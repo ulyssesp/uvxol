@@ -1,0 +1,25 @@
+{
+  "name": "uvxol",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ulyssesp/uvxol.git"
+  },
+  "author": "Ulysses Popple",
+  "license": "BSD3",
+  "bugs": {
+    "url": "https://github.com/ulyssesp/uvxol/issues"
+  },
+  "homepage": "https://github.com/ulyssesp/uvxol#readme",
+  "dependencies": {
+    "fp-ts": "^2.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^12.6.8"
+  }
+}
