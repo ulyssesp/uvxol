@@ -3,7 +3,7 @@
     <v-container>
         <v-row>
             <v-col>
-                <CreateAction v-on:data-change="refresh"></CreateAction>
+                <CreateAction :voteOptions="voteOptions" v-on:data-change="refresh"></CreateAction>
             </v-col>
         </v-row>
         <v-row>
@@ -18,21 +18,25 @@
 import { Vue, Component } from 'vue-property-decorator';
 import CreateAction from '../components/CreateAction.vue';
 import ActionsList from '../components/ActionsList.vue';
-import { Action } from '../types';
+import { Action, VoteOption } from '../types';
 import { getActions } from '../services/ActionsService';
+import { getVoteOptions } from '../services/VoteOptionsService';
 
 
 @Component({
     components: { CreateAction, ActionsList }
 })
 export default class Actions extends Vue {
+    voteOptions: VoteOption[] = [];
     actions: Action[] = [];
     err = "success";
     refresh(){
-        console.log("refresh")
-        getActions().then((actions) => this.actions = actions)
-            .then(() => this.err = "success")
-            .catch(err => this.err = err);
+        Promise.all([
+            getActions().then((actions) => this.actions = actions),
+            getVoteOptions().then((voteOptions) => this.voteOptions = voteOptions),
+        ])
+        .then(() => this.err = "success")
+        .catch(err => this.err = err);
     }
     protected mounted() {
         this.refresh();

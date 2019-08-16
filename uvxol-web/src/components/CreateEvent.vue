@@ -16,6 +16,22 @@
             <v-text-field v-model="duration" label="Duration"></v-text-field>
             <v-text-field v-model="delay" label="Delay"></v-text-field>
             <v-select
+                :items="voteOptions"
+                item-text="name"
+                label="Depends on"
+                v-model="dependencies"
+                item-value="id"
+                segmented overflow editable multiple
+            ></v-select>
+            <v-select
+                :items="voteOptions"
+                item-text="name"
+                label="Prevented by"
+                v-model="preventions"
+                item-value="id"
+                segmented overflow editable multiple
+            ></v-select>
+            <v-select
                 :items="actions"
                 item-text="name"
                 label="Actions"
@@ -30,7 +46,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { ActionEvent, Action } from '../types';
+import { ActionEvent, Action, VoteOption } from '../types';
 import { postAction } from '../services/ActionsService';
 import { lookup } from 'dns';
 import { postEvent } from '../services/EventsService';
@@ -42,12 +58,15 @@ import { array } from 'fp-ts';
 export default class CreateAction extends Vue {
     @Prop() actions!: Action[];
     @Prop() events!: ActionEvent[];
+    @Prop() voteOptions!: VoteOption[];
     err = "success";
     name = "";
     duration = "4000";
     delay = "0";
     actionChoices = []
     triggers = []
+    dependencies = []
+    preventions = []
     submit() {
         postEvent(this.name, this.triggers, parseInt(this.duration), parseInt(this.delay), this.actionChoices)
             .then(() => this.err = "success")

@@ -18,15 +18,28 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { ActionEvent, Action } from '../types'
+import { ActionEvent, Action, VoteOption } from '../types'
 import { deleteEvent } from '../services/EventsService';
-import { array } from 'fp-ts';
+import { array, option } from 'fp-ts';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 @Component
 export default class EventsList extends Vue {
     @Prop({required:true}) events!: ActionEvent[];
     @Prop({required:true}) actions!: Action[];
-    flatevents = () => array.map((e: ActionEvent) => ({...e, actions: array.map((a: Action) => a.name)(e.actions).join()}))(this.events);
+    flatevents = () => 
+        array.map((e: ActionEvent) => ({
+            ...e, 
+            actions: array.map((a: Action) => a.name)(e.actions).join(),
+            dependencies: array.map<VoteOption, string>(vo => vo.name)(e.dependencies).join(),
+            preventions: array.map<VoteOption, string>(vo => vo.name)(e.preventions).join(),
+            triggers: array.filterMap(pid => 
+                pipe(
+                    this.events,
+                    array.findFirst<ActionEvent>(vot => pid === vot.id),
+                    option.map<ActionEvent, string>(e => e.name)
+                ))(e.triggers || []).join(),
+        }))(this.events);
     err!: string;
     headers = [
         { text: "name", value: "name" }, 
@@ -35,6 +48,7 @@ export default class EventsList extends Vue {
         { text: "actions", value: "actions" }, 
         { text: "edit", value: "action" }, 
     ]
+    mounted = () => console.log(this.events)
     deleteEvent(id: number) {
         deleteEvent(id)
             .then(() => this.$emit('data-change'))

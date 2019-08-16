@@ -5,21 +5,20 @@
         </v-row>
         <v-row>
             <v-text-field v-model="name" label="Name"></v-text-field>
-            <v-text-field v-model="location" label="Location"></v-text-field>
-            <v-select
-                :items="items"
-                v-model="type"
-                label="type"
-                segmented overflow editable
-                target="#target"
-            ></v-select>
-            <v-text-field v-model="file" label="File"></v-text-field>
-            <v-text-field v-model="text" label="Vote Text"></v-text-field>
+            <v-text-field v-model="text" label="Text"></v-text-field>
             <v-select
                 :items="voteOptions"
                 item-text="name"
-                label="Vote options"
-                v-model="voteOptionChoices"
+                label="Depends on"
+                v-model="dependencies"
+                item-value="id"
+                segmented overflow editable multiple
+            ></v-select>
+            <v-select
+                :items="voteOptions"
+                item-text="name"
+                label="Prevented by"
+                v-model="preventions"
                 item-value="id"
                 segmented overflow editable multiple
             ></v-select>
@@ -30,27 +29,23 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Action, ActionTypesMap, VoteOption } from '../types';
-import { postAction } from '../services/ActionsService';
+import { VoteOption } from '../types';
+import { postVoteOption } from '../services/VoteOptionsService';
 import { lookup } from 'dns';
 
 @Component({
     components: {}
 })
 
-
-export default class CreateAction extends Vue {
+export default class CreateVoteOption extends Vue {
     @Prop() voteOptions!: VoteOption[];
-    items = ['audio', 'video', 'vote'];
-    err = "success";
     name = "";
-    file = "";
-    location = "";
-    type = "";
     text = "";
-    voteOptionChoices=[];
+    preventions = [];
+    dependencies = [];
+    err = "";
     submit() {
-        postAction(this.name, this.file, ActionTypesMap[this.type], this.location, this.voteOptionChoices, this.text)
+        postVoteOption(this.name, this.text, this.dependencies, this.preventions)
             .then(() => this.err = "success")
             .then(() => this.$emit('data-change'))
             .catch(err => this.err = err)

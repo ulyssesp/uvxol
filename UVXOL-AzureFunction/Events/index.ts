@@ -8,7 +8,6 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const triggerId = req.query.triggerId ? parseInt(req.query.triggerId) : null;
 
     let body = {}
-    context.log("hi there " + triggerId)
 
     if (req.method === "GET") {
         if (triggerId != null) {
@@ -22,11 +21,13 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         }
     } else if (req.method === "POST") {
         body = await db.insertEvent(
-            req.body.triggers, 
+            req.body.triggers || [], 
             req.body.duration, 
             req.body.name,
-            req.body.actions, 
-            req.body.delay, 
+            req.body.actions || [], 
+            req.body.dependencies || [],
+            req.body.preventions || [],
+            req.body.delay
         ).then(() => ({message: "success"}))
         .catch(err => { context.log(err); return { err }});
     } else if (req.method === "DELETE") {
@@ -37,6 +38,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     context.res = {
         body: JSON.stringify(body),
+        status: body["err"] ? 400 : 200,
         headers: {
             'Content-Type': "application/json",
             'Access-Control-Allow-Origin': "*",
