@@ -4,7 +4,7 @@ import { array } from 'fp-ts';
 import { mapVoteOption } from './VoteOptionsService';
 
 
-export const actionsuri = 'http://localhost:7071/api/actions';
+export const actionsuri = 'https://uvxol-httptrigger.azurewebsites.net/api/actions';
 
 export const getActions: () => Promise<Action[]> = () =>
     request.get({url: actionsuri, json: true })

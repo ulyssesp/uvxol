@@ -6,7 +6,7 @@ import { mapVoteOption } from './VoteOptionsService';
 const rp = require("request-promise-native");
 
 
-export const eventsuri = 'http://localhost:7071/api/events';
+export const eventsuri = 'http://uvxol-httptrigger.azurewebsites.net/api/events';
 
 export const getEvents: () => Promise<ActionEvent[]> = () =>
     rp.get({url: eventsuri, json: true })

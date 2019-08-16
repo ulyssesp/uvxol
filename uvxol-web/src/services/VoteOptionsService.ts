@@ -3,7 +3,7 @@ import { VoteOption } from '../types';
 import { array } from 'fp-ts';
 
 
-export const voteOptionsUri = 'http://localhost:7071/api/voteoptions';
+export const voteOptionsUri = 'http://uvxol-httptrigger.azurewebsites.net/api/voteoptions';
 
 export const getVoteOptions: () => Promise<VoteOption[]> = () =>
     request.get({url: voteOptionsUri, json: true })
