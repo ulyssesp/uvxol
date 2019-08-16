@@ -23,7 +23,12 @@ const connect = async function () {
 export const getEvents: () => Promise<any> = async function() {
     return connect().then(() => 
         pool.query`select 
-            EventId, Delay, Duration, (select TriggerId from EventTriggers where EventId = E.EventId for json auto) as Triggers
+            EventId, Name, Delay, Duration, (
+                select Actions.ActionId, Location, FilePath, Type, Name 
+                from Actions join EventActions 
+                on (EventActions.EventId = E.EventId and Actions.ActionId = EventActions.ActionId) 
+                for json auto
+            ) as Actions
             from Events as E
             for json auto`
     );
@@ -33,7 +38,16 @@ export const getEventsForTrigger: (triggerId: number) => Promise<any> = async fu
     return connect().then(() =>
         pool.request()
             .input('triggerId', sql.Int, triggerId)
-            .query`select E.EventId, Delay, Duration from Events as E join EventTriggers as T on (T.TriggerId = @triggerId and T.EventId = E.EventId) for json auto`
+            .query`select 
+            EventId, Name, Delay, Duration, (
+                select Actions.ActionId, Location, FilePath, Type, Name 
+                from Actions join EventActions 
+                on (EventActions.EventId = E.EventId and Actions.ActionId = EventActions.ActionId) 
+                for json auto
+            ) as Actions
+            from Events as E
+            join EventTriggers as T on (T.TriggerId = @triggerId and T.EventId = E.EventId)
+            for json auto`
     )
 }
 
@@ -75,8 +89,8 @@ export const insertEvent = async function(
             });
 
             return Promise.all([
-                pool.request().bulk(eventTriggers), 
-                pool.request().bulk(eventActions), 
+                triggers.length > 0 ? pool.request().bulk(eventTriggers) : Promise.resolve({}), 
+                actions.length > 0 ? pool.request().bulk(eventActions) : Promise.resolve({}), 
             ]);
         })
 }
@@ -98,15 +112,29 @@ export const insertAction = async function(
 export const deleteEvent = async (id:number) => 
     id === null || id <= 0 ? 
         { err: "invalid id" } :
-        connect().then(() => 
-            pool.request()
-                .input('id', sql.Int, id)
-                .query`delete from Events where EventId = @id`)
+        connect()
+            .then(() => 
+                pool.request()
+                    .input('id', sql.Int, id)
+                    .query`delete from EventActions where EventId = @id`)
+            .then(() => 
+                pool.request()
+                    .input('id', sql.Int, id)
+                    .query`delete from EventTriggers where (EventId = @id or TriggerId = @id)`)
+            .then(() => 
+                pool.request()
+                    .input('id', sql.Int, id)
+                    .query`delete from Events where EventId = @id`)
 
 export const deleteAction = async (id:number) => 
     id === null || id <= 0 ? 
         { err: "invalid id" } :
-        connect().then(() => 
-            pool.request()
-                .input('id', sql.Int, id)
-                .query`delete from Actions where ActionId = @id`)
+        connect()
+            .then(() => 
+                pool.request()
+                    .input('id', sql.Int, id)
+                    .query`delete from EventActions where ActionId = @id`)
+            .then(() =>
+                pool.request()
+                    .input('id', sql.Int, id)
+                    .query`delete from Actions where ActionId = @id`)

@@ -36,7 +36,10 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     context.res = {
         body: JSON.stringify(body),
         headers: {
-            'Content-Type': "application/json"
+            'Content-Type': "application/json",
+            'Access-Control-Allow-Origin': "*",
+            'Access-Control-Allow-Headers': "content-type",
+            'Access-Control-Allow-Methods': "GET,POST,DELETE",
         }
     };
 };

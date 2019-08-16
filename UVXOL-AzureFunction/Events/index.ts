@@ -4,10 +4,11 @@ import * as db from "../Shared/db"
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     context.log('Events request');
 
-    const id = context.bindingData.id;
-    const triggerId = parseInt(req.query.triggerId)
+    const id = req.query.id ? parseInt(req.query.id) : null;
+    const triggerId = req.query.triggerId ? parseInt(req.query.triggerId) : null;
 
     let body = {}
+    context.log("hi there " + triggerId)
 
     if (req.method === "GET") {
         if (triggerId != null) {
@@ -24,7 +25,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             req.body.triggers, 
             req.body.duration, 
             req.body.name,
-            req.body.action, 
+            req.body.actions, 
             req.body.delay, 
         ).then(() => ({message: "success"}))
         .catch(err => { context.log(err); return { err }});
@@ -37,7 +38,10 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     context.res = {
         body: JSON.stringify(body),
         headers: {
-            'Content-Type': "application/json"
+            'Content-Type': "application/json",
+            'Access-Control-Allow-Origin': "*",
+            'Access-Control-Allow-Headers': "content-type",
+            'Access-Control-Allow-Methods': "GET,POST,DELETE",
         }
     };
 };
