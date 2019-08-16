@@ -40,9 +40,9 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         status: body["err"] ? 400 : 200,
         headers: {
             'Content-Type': "application/json",
-            'Access-Control-Allow-Origin': "*",
-            'Access-Control-Allow-Headers': "content-type",
-            'Access-Control-Allow-Methods': "GET,POST,DELETE",
+            // 'Access-Control-Allow-Origin': "*",
+            // 'Access-Control-Allow-Headers': "content-type",
+            // 'Access-Control-Allow-Methods': "GET,POST,DELETE",
         }
     };
 };
