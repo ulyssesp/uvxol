@@ -29,7 +29,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         ).then(() => ({message: "success"}))
         .catch(err => { context.log(err); return { err }});
     } else if (req.method === "DELETE") {
-        body = await db.deleteEvent(id)
+        body = await db.deleteVoteOption(id)
             .then(() => ({ message: "success" }))
             .catch(err => ({err}))
     }

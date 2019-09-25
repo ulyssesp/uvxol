@@ -19,7 +19,7 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { ActionEvent, Action, VoteOption } from '../types'
-import { deleteEvent } from '../services/EventsService';
+// import { deleteEvent } from '../services/EventsService';
 import { array, option } from 'fp-ts';
 import { pipe } from 'fp-ts/lib/pipeable';
 
@@ -46,13 +46,14 @@ export default class EventsList extends Vue {
         { text: "duration", value: "duration" }, 
         { text: "delay", value: "delay" }, 
         { text: "actions", value: "actions" }, 
+        { text: "triggers", value: "triggers" }, 
         { text: "edit", value: "action" }, 
     ]
     mounted = () => console.log(this.events)
     deleteEvent(id: number) {
-        deleteEvent(id)
-            .then(() => this.$emit('data-change'))
-            .catch(err => this.err = err);
+        // deleteEvent(id)
+        //     .then(() => this.$emit('data-change'))
+        //     .catch(err => this.err = err);
     }
 }
 </script>

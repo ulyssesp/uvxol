@@ -20,8 +20,8 @@ export const mapVoteOption: (a: any) => VoteOption =
             id: a.VoteOptionId,
             name: a.Name,
             text: a.Text,
-            dependencies: a.Depenencies || [],
-            preventions: a.Preventions || [],
+            dependencies: array.map((d: any) => d.DependencyId)(a.Dependencies || []),
+            preventions: array.map((d: any) => d.DependencyId)(a.Preventions || []),
         });
 
 export const postVoteOption: (name: string, text: string, dependencies: number[], preventions: number[]) 

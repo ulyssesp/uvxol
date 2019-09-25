@@ -47,10 +47,12 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { ActionEvent, Action, VoteOption } from '../types';
-import { postAction } from '../services/ActionsService';
 import { lookup } from 'dns';
-import { postEvent } from '../services/EventsService';
 import { array } from 'fp-ts';
+import Events from '../store/modules/events'
+import { getModule } from 'vuex-module-decorators';
+
+const eventStore = getModule(Events)
 
 @Component({
     components: {}
@@ -68,7 +70,7 @@ export default class CreateAction extends Vue {
     dependencies = []
     preventions = []
     submit() {
-        postEvent(this.name, this.triggers, parseInt(this.duration), parseInt(this.delay), this.actionChoices)
+        eventStore.postEvent(this.name, this.triggers, parseInt(this.duration), parseInt(this.delay), this.actionChoices)
             .then(() => this.err = "success")
             .then(() => this.$emit('data-change'))
             .catch(err => this.err = err)

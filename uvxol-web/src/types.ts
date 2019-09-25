@@ -1,3 +1,5 @@
+import { Lens } from 'monocle-ts';
+
 export type ActionId = number;
 
 export interface Action {
@@ -33,4 +35,16 @@ export interface VoteOption {
     preventions: VoteOptionId[];
     dependencies: VoteOptionId[];
 }
+
+export interface EventsState {
+  events: ActionEvent[]
+}
+
+export interface State {
+    events: EventsState
+}
+
+export const events = new Lens<EventsState, ActionEvent[]>(
+    s => s.events,
+    a => s => ({ ...s, events: a }))
 

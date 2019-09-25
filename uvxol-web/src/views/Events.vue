@@ -1,4 +1,3 @@
-
 <template>
     <v-container>
         <v-row>
@@ -15,34 +14,38 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component } from 'vue-property-decorator';
+
 import CreateEvent from '../components/CreateEvent.vue';
 import EventsList from '../components/EventsList.vue';
 import { Action, ActionEvent, VoteOption } from '../types';
-import { getActions } from '../services/ActionsService';
-import { getEvents } from '../services/EventsService';
-import { getVoteOptions } from '../services/VoteOptionsService';
+import Events from '../store/modules/events';
+import { getModule } from 'vuex-module-decorators';
+// import { eventStore } from '../store/utils/store-accessor';
+import store from '../store'
+import { Component, Vue, Watch } from 'vue-property-decorator';
 
+const eventStore = getModule(Events)
 
 @Component({
-    components: { CreateEvent, EventsList }
+  components: { CreateEvent, EventsList }
 })
-export default class Actions extends Vue {
-    actions: Action[] = [];
-    events: ActionEvent[] = [];
-    voteOptions: VoteOption[] = [];
-    err = "success";
-    refresh(){
-        Promise.all([
-            getEvents().then((events) => this.events = events),
-            getActions().then((actions) => this.actions = actions),
-            getVoteOptions().then((voteOptions) => this.voteOptions = voteOptions)
-        ])
-        .then(() => this.err = "success")
-        .catch(err => this.err = err)
-    }
-    protected mounted() {
-        this.refresh();
-    }
+export default class EventsView extends Vue {
+  actions: Action[] = [];
+  events: ActionEvent[] = eventStore.events;
+  voteOptions: VoteOption[] = [];
+  err = "success";
+  get eventList() {
+    return eventStore.events;
+  }
+  @Watch('eventList')
+  updateEvents(e: ActionEvent[]) {
+    this.events = e;
+  }
+  refresh() {
+    eventStore.getEvents();
+  }
+  mounted() {
+    this.refresh();
+  }
 };
 </script>

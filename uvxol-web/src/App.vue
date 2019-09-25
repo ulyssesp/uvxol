@@ -18,22 +18,24 @@
 
 <script lang="ts">
 import Vue from 'vue';
-import Actions from './views/Actions.vue';
+//import Actions from './views/Actions.vue';
 import Events from './views/Events.vue';
-import VoteOptions from './views/VoteOptions.vue';
+//import VoteOptions from './views/VoteOptions.vue';
 import VueRouter from 'vue-router';
 
 export default Vue.extend({
   router: new VueRouter({
     routes: [
-      {path: "/actions", component: Actions},
+      //{path: "/actions", component: Actions},
       {path: "/events", component: Events},
-      {path: "/voteoptions", component: VoteOptions},
+      //{path: "/voteoptions", component: VoteOptions},
+      //  {path: '', name: 'actions', component: Actions},
+      //  {path: '/*', name: 'actions', component: Actions}
     ]
   }),
   name: 'App',
   components: {
-    Actions,
+    Events,
   },
   data: () => ({
     //

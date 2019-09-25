@@ -8,15 +8,18 @@
     "prestart": "npm run build && func extensions install",
     "start:host": "func start",
     "start": "npm run start:host & npm run watch",
-    "build:production": "npm run prestart && npm prune --production",
-    "test": "echo \"No tests yet...\""
+    "build:production": "npm run prestart",
+    "test": "echo \"No tests yet...\"",
+    "zip": "zip -r dist.zip dist",
+    "deploy": "npm run build:production && func azure functionapp publish UVXOL-HttpTrigger"
   },
   "dependencies": {
+    "fp-ts": "^2.0.5",
     "mssql": "^5.1.0"
   },
   "devDependencies": {
-    "@azure/functions": "^1.0.2-beta2",
-    "@types/node": "^12.7.1",
+    "@azure/functions": "^1.0.3",
+    "@types/node": "^12.7.4",
     "typescript": "^3.3.3"
   }
 }

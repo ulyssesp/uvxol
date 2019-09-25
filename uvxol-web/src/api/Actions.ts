@@ -1,7 +1,7 @@
 import * as request from 'request-promise-native';
 import { Action, VoteOptionId } from '@/types';
 import { array } from 'fp-ts';
-import { mapVoteOption } from './VoteOptionsService';
+import { mapVoteOption } from './VoteOptions';
 
 
 export const actionsuri = 'https://uvxol-httptrigger.azurewebsites.net/api/actions';
