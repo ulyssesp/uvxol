@@ -17,7 +17,7 @@ export type EventId = number;
 
 export interface ActionEvent {
     id: EventId;
-    name: string,
+    name: string;
     duration: number;
     delay?: number | null;
     dependencies: VoteOption[];
@@ -36,15 +36,6 @@ export interface VoteOption {
     dependencies: VoteOptionId[];
 }
 
-export interface EventsState {
-  events: ActionEvent[]
+export interface Response {
+  message: string;
 }
-
-export interface State {
-    events: EventsState
-}
-
-export const events = new Lens<EventsState, ActionEvent[]>(
-    s => s.events,
-    a => s => ({ ...s, events: a }))
-

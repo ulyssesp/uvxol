@@ -20,32 +20,32 @@ import EventsList from '../components/EventsList.vue';
 import { Action, ActionEvent, VoteOption } from '../types';
 import Events from '../store/modules/events';
 import { getModule } from 'vuex-module-decorators';
-// import { eventStore } from '../store/utils/store-accessor';
-import store from '../store'
+import { store, eventStore } from '../store';
 import { Component, Vue, Watch } from 'vue-property-decorator';
 
-const eventStore = getModule(Events)
-
 @Component({
-  components: { CreateEvent, EventsList }
+  components: { CreateEvent, EventsList },
 })
 export default class EventsView extends Vue {
-  actions: Action[] = [];
-  events: ActionEvent[] = eventStore.events;
-  voteOptions: VoteOption[] = [];
-  err = "success";
+  private actions: Action[] = [];
+  private events: ActionEvent[] = eventStore.events;
+  private voteOptions: VoteOption[] = [];
+  private err = 'success';
   get eventList() {
     return eventStore.events;
   }
   @Watch('eventList')
-  updateEvents(e: ActionEvent[]) {
+  public updateEvents(e: ActionEvent[]) {
     this.events = e;
   }
-  refresh() {
-    eventStore.getEvents();
+  private refresh() {
+    this.err = 'loading';
+    eventStore.getEvents()
+      .catch((e: any) => this.err = e)
+      .then(() => this.err = 'success');
   }
-  mounted() {
+  protected mounted() {
     this.refresh();
   }
-};
+}
 </script>

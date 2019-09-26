@@ -24,7 +24,7 @@ export const mapVoteOption: (a: any) => VoteOption =
             preventions: array.map((d: any) => d.DependencyId)(a.Preventions || []),
         });
 
-export const postVoteOption: (name: string, text: string, dependencies: number[], preventions: number[]) 
+export const postVoteOption: (name: string, text: string, dependencies: number[], preventions: number[])
     => Promise<any> = (name, text, dependencies, preventions) =>
         request.post({url: voteOptionsUri, json: true, body: { name, text, dependencies, preventions }}).promise();
 
