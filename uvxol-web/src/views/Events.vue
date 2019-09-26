@@ -20,7 +20,8 @@ import EventsList from '../components/EventsList.vue';
 import { Action, ActionEvent, VoteOption } from '../types';
 import Events from '../store/modules/events';
 import { getModule } from 'vuex-module-decorators';
-import { store, eventStore } from '../store';
+import actionStore from '../store/modules/actions';
+import eventStore from '../store/modules/events';
 import { Component, Vue, Watch } from 'vue-property-decorator';
 
 @Component({

@@ -2,9 +2,7 @@ import { ActionEvent } from '@/types';
 import { array } from 'fp-ts';
 import { mapAction } from './Actions';
 import { mapVoteOption } from './VoteOptions';
-
-const rp = require("request-promise-native");
-
+import rp from 'request-promise-native';
 
 export const eventsuri = 'https://uvxol-httptrigger.azurewebsites.net/api/events';
 
@@ -17,12 +15,14 @@ export const getEvents: () => Promise<ActionEvent[]> = () =>
             duration: e.Duration,
             delay: e.Delay,
             actions: array.map(mapAction)(e.Actions || []),
-            triggers: array.map((e: any) => e.TriggerId)(e.Triggers || []),
+            triggers: array.map((t: any) => t.TriggerId)(e.Triggers || []),
             dependencies: array.map(mapVoteOption)(e.Dependencies || []),
             preventions: array.map(mapVoteOption)(e.Preventions || []),
         })));
 
-export const postEvent: (name: string, triggers: number[], duration: number, delay: number, actions: number[]) => 
+export const postEvent: (name: string, triggers: number[],
+                         duration: number, delay: number,
+                         actions: number[]) =>
     Promise<ActionEvent> =
     (name, triggers, duration, delay, actions) =>
         rp.post({url: eventsuri, json: true, body: {name, triggers, duration, delay, actions}}).promise();

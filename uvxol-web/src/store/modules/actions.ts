@@ -1,11 +1,11 @@
 import * as api from '../../api/Actions';
 import * as vmod from 'vuex-module-decorators';
 import { Action, VoteOptionId } from '@/types';
-import { store } from '@/store';
 import {array} from 'fp-ts';
+import store from '@/store';
 
 @vmod.Module({ dynamic: true, name: 'actionStore', store })
-export default class Actions extends vmod.VuexModule {
+class Actions extends vmod.VuexModule {
   public actionList: Action[] = [];
 
   @vmod.Action({ commit: 'addAction' })
@@ -34,3 +34,5 @@ export default class Actions extends vmod.VuexModule {
     array.filter((a: Action) => a.id !== id)(this.actionList);
   }
 }
+
+export default vmod.getModule(Actions);

@@ -14,27 +14,35 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component } from 'vue-property-decorator';
+import { Vue, Component, Watch } from 'vue-property-decorator';
 import CreateVoteOption from '../components/CreateVoteOption.vue';
 import VoteOptionsList from '../components/VoteOptionsList.vue';
 import { VoteOption } from '../types';
-import { getVoteOptions } from '../services/VoteOptionsService';
+import voteOptionStore from '../store/modules/voteoptions';
 
 
 @Component({
     components: { CreateVoteOption, VoteOptionsList }
 })
 export default class VoteOptions extends Vue {
-    voteOptions: VoteOption[] = [];
-    err = "success";
-    refresh(){
-        getVoteOptions()
-            .then((voteOptions) => this.voteOptions = voteOptions)
-            .then(() => this.err = "success")
-            .catch(err => this.err = err);
-    }
-    protected mounted() {
-        this.refresh();
-    }
+  private voteOptions: VoteOption[] = [];
+  private err = "success";
+  get voteOptionList() {
+    return voteOptionStore.voteOptions;
+  }
+  @Watch('voteOptionList')
+  public updateVoteOptions(vo: VoteOption[]) {
+    this.voteOptions = vo;
+  }
+  
+  refresh(){
+    this.err = 'loading';
+    voteOptionStore.getVoteOptions()
+      .then(() => this.err = 'success')
+      .catch((e: any) => this.err = e);
+  }
+  protected mounted() {
+    this.refresh();
+  }
 };
 </script>

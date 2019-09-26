@@ -1,5 +1,3 @@
-import { Lens } from 'monocle-ts';
-
 export type ActionId = number;
 
 export interface Action {

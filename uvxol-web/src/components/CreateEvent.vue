@@ -51,8 +51,7 @@ import { lookup } from 'dns';
 import { array } from 'fp-ts';
 import Events from '../store/modules/events'
 import { getModule } from 'vuex-module-decorators';
-
-const eventStore = getModule(Events)
+import eventStore from '../store/modules/events';
 
 @Component({
     components: {}
@@ -70,10 +69,12 @@ export default class CreateAction extends Vue {
     dependencies = []
     preventions = []
     submit() {
-        eventStore.createEvent(this.name, this.triggers, parseInt(this.duration), parseInt(this.delay), this.actionChoices)
-            .then(() => this.err = "success")
-            .then(() => this.$emit('data-change'))
-            .catch(err => this.err = err)
+      console.log(this.triggers);
+      console.log(this.duration);
+      eventStore.createEvent(this.name, this.triggers, parseInt(this.duration), parseInt(this.delay), this.actionChoices)
+          .then(() => this.err = "success")
+          .then(() => this.$emit('data-change'))
+          .catch(err => this.err = err)
     }
 }
 </script>

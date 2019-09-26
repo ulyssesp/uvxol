@@ -23,8 +23,8 @@ import { array, option } from 'fp-ts';
 import { pipe } from 'fp-ts/lib/pipeable';
 import Events from '../store/modules/events'
 import { getModule } from 'vuex-module-decorators';
+import eventStore from '../store/modules/events';
 
-const eventStore = getModule(Events)
 
 @Component
 export default class EventsList extends Vue {

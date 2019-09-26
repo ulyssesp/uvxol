@@ -20,10 +20,10 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { VoteOption, VoteOptionId } from '../types'
-import { deleteVoteOption } from '../services/VoteOptionsService';
 import { array, option } from 'fp-ts';
 import { pipe } from 'fp-ts/lib/pipeable';
 import { Option } from 'fp-ts/lib/Option';
+import voteOptionStore from '@/store/modules/voteoptions';
 
 @Component
 export default class VoteOptionsList extends Vue {
@@ -53,9 +53,9 @@ export default class VoteOptionsList extends Vue {
         { text: "edit", value: "action" }, 
     ]
     deleteVoteOption(id: number) {
-        deleteVoteOption(id)
+        voteOptionStore.deleteVoteOption(id)
             .then(() => this.$emit('data-change'))
-            .catch(err => this.err = err);
+            .catch((err: any) => this.err = err);
     }
 }
 </script>

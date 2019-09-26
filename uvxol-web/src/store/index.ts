@@ -1,13 +1,21 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
-import Events from './modules/events';
-import Actions from './modules/actions';
-import VoteOptions from './modules/voteoptions';
-import { getModule } from 'vuex-module-decorators';
+// import Events from '@/store/modules/events';
+// import Actions from '@/store/modules/actions';
+// import VoteOptions from '@/store/modules/voteoptions';
+// import { getModule } from 'vuex-module-decorators';
 
 Vue.use(Vuex);
 
-export const store = new Vuex.Store({});
-export const eventStore = getModule(Events);
-export const actionStore = getModule(Actions);
-export const voteOptionStore = getModule(VoteOptions);
+export default new Vuex.Store({});
+
+// const eventStore = getModule(Events, store);
+// const actionStore = getModule(Actions, store);
+// const voteOptionStore = getModule(VoteOptions, store);
+
+// export {
+//   store,
+//   eventStore,
+//   actionStore,
+//   voteOptionStore,
+// };

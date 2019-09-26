@@ -1,11 +1,11 @@
 import * as api from '../../api/VoteOptions';
-import { Module, VuexModule, Action, Mutation, MutationAction } from 'vuex-module-decorators';
+import { Module, VuexModule, Action, Mutation, MutationAction, getModule } from 'vuex-module-decorators';
 import { VoteOption } from '@/types';
-import { store } from '@/store';
+import store from '@/store';
 import {array} from 'fp-ts';
 
 @Module({ dynamic: true, name: 'voteOptionStore', store })
-export default class VoteOptions extends VuexModule {
+class VoteOptions extends VuexModule {
   public voteOptions: VoteOption[] = [];
 
   @Action({ commit: 'addVoteOption' })
@@ -33,3 +33,5 @@ export default class VoteOptions extends VuexModule {
     array.filter((e: VoteOption) => e.id !== id)(this.voteOptions);
   }
 }
+
+export default getModule(VoteOptions);

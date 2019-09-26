@@ -21,6 +21,7 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { Action, VoteOption } from '../types'
 import { array } from 'fp-ts';
+import actionStore from '../store/modules/actions';
 
 @Component
 export default class ActionsList extends Vue {
@@ -40,7 +41,7 @@ export default class ActionsList extends Vue {
         { text: "edit", value: "action" }, 
     ]
     deleteAction(id: number) {
-        deleteAction(id)
+        actionStore.deleteAction(id)
             .then(() => this.$emit('data-change'))
             .catch(err => this.err = err);
     }

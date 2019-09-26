@@ -1,15 +1,18 @@
 import * as api from '../../api/Events';
-import { Module, VuexModule, Action, Mutation, MutationAction } from 'vuex-module-decorators';
+import { Module, VuexModule, Action, Mutation, MutationAction, getModule } from 'vuex-module-decorators';
 import { ActionEvent } from '@/types';
-import { store } from '@/store';
+import store from '@/store';
 import {array} from 'fp-ts';
 
 @Module({ dynamic: true, name: 'eventStore', store })
-export default class Events extends VuexModule {
+class Events extends VuexModule {
   public events: ActionEvent[] = [];
 
   @Action({ commit: 'addEvent' })
   public async createEvent(name: string, triggers: number[], duration: number, delay: number, actions: number[]) {
+    console.log(triggers);
+    console.log(duration);
+    console.log(delay);
     return api.postEvent(name, triggers, duration, delay, actions);
   }
 
@@ -33,3 +36,6 @@ export default class Events extends VuexModule {
     array.filter((e: ActionEvent) => e.id !== id)(this.events);
   }
 }
+
+
+export default getModule(Events);

@@ -19,7 +19,8 @@ import { Vue, Component, Watch } from 'vue-property-decorator';
 import CreateAction from '../components/CreateAction.vue';
 import ActionsList from '../components/ActionsList.vue';
 import { Action, VoteOption } from '../types';
-import { actionStore, voteOptionStore } from '../store';
+import actionStore from '../store/modules/actions';
+import voteOptionStore from '../store/modules/voteoptions';
 
 
 @Component({
@@ -46,8 +47,8 @@ export default class Actions extends Vue {
   private refresh(){
     this.err = 'loading';
     Promise.all([
-        actionStore.getActions()
-        voteOptionStore.getVoteOptions()
+        actionStore.getActions(),
+        voteOptionStore.getVoteOptions(),
       ])
       .then(() => this.err = "success")
       .catch((err: any) => this.err = err);
