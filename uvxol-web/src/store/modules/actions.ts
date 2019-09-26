@@ -8,10 +8,10 @@ import store from '@/store';
 class Actions extends vmod.VuexModule {
   public actionList: Action[] = [];
 
-  @vmod.Action({ commit: 'addAction' })
-  public async createAction(name: string, filePath: string, type: number,
-                            location: string, voteOptions: VoteOptionId[], text: string) {
-    return api.postAction(name, filePath, type, location, voteOptions, text);
+  @vmod.Action({ commit: 'addAction', rawError: true })
+  public async createAction(a: {name: string, filePath: string, type: number,
+                            location: string, voteOptions: VoteOptionId[], text: string}) {
+    return api.postAction(a.name, a.filePath, a.type, a.location, a.voteOptions, a.text);
   }
 
   @vmod.Action({ commit: 'removeAction' })

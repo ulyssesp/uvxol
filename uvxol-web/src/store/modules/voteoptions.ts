@@ -9,8 +9,8 @@ class VoteOptions extends VuexModule {
   public voteOptions: VoteOption[] = [];
 
   @Action({ commit: 'addVoteOption' })
-  public async createVoteOption(name: string, text: string, dependencies: number[], preventions: number[]) {
-    return api.postVoteOption(name, text, dependencies, preventions);
+  public async createVoteOption(vo: {name: string, text: string, dependencies: number[], preventions: number[]}) {
+    return api.postVoteOption(vo.name, vo.text, vo.dependencies, vo.preventions);
   }
 
   @Action({ commit: 'removeVoteOption' })

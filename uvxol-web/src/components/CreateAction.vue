@@ -37,8 +37,6 @@ import actionStore from '../store/modules/actions';
 @Component({
     components: {}
 })
-
-
 export default class CreateAction extends Vue {
     @Prop() voteOptions!: VoteOption[];
     items = ['audio', 'video', 'vote'];
@@ -50,10 +48,24 @@ export default class CreateAction extends Vue {
     text = "";
     voteOptionChoices=[];
     submit() {
-        actionStore.createAction(this.name, this.file, ActionTypesMap[this.type], this.location, this.voteOptionChoices, this.text)
-            .then(() => this.err = "success")
-            .then(() => this.$emit('data-change'))
-            .catch(err => this.err = err)
+      actionStore.createAction({
+        name: this.name, 
+        filePath: this.file, 
+        type: ActionTypesMap[this.type], 
+        location: this.location, 
+        voteOptions: this.voteOptionChoices, 
+        text: this.text
+      })
+        .then(() => this.err = "success")
+        .then(() => this.$emit('data-change'))
+        .catch((err: any) => 
+          {
+            try {
+              this.err = err.error.err.originalError.info.message
+            } catch {
+              this.err = err
+            }
+          })
     }
 }
 </script>

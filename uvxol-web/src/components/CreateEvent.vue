@@ -65,16 +65,26 @@ export default class CreateAction extends Vue {
     duration = "4000";
     delay = "0";
     actionChoices = []
-    triggers = []
-    dependencies = []
-    preventions = []
+    triggers: number[] = []
+    dependencies: number[] = []
+    preventions: number[] = []
     submit() {
-      console.log(this.triggers);
-      console.log(this.duration);
-      eventStore.createEvent(this.name, this.triggers, parseInt(this.duration), parseInt(this.delay), this.actionChoices)
-          .then(() => this.err = "success")
-          .then(() => this.$emit('data-change'))
-          .catch(err => this.err = err)
+      eventStore.createEvent({ 
+        name: this.name, 
+        triggers: this.triggers, 
+        duration: parseInt(this.duration), 
+        delay: parseInt(this.delay), 
+        actions: this.actionChoices
+      }).then(() => this.err = "success")
+        .then(() => this.$emit('data-change'))
+        .catch((err: any) => 
+          {
+            try {
+              this.err = err.error.err.originalError.info.message
+            } catch {
+              this.err = err
+            }
+          })
     }
 }
 </script>
