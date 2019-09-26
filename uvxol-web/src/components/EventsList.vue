@@ -19,9 +19,12 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { ActionEvent, Action, VoteOption } from '../types'
-// import { deleteEvent } from '../services/EventsService';
 import { array, option } from 'fp-ts';
 import { pipe } from 'fp-ts/lib/pipeable';
+import Events from '../store/modules/events'
+import { getModule } from 'vuex-module-decorators';
+
+const eventStore = getModule(Events)
 
 @Component
 export default class EventsList extends Vue {
@@ -51,9 +54,9 @@ export default class EventsList extends Vue {
     ]
     mounted = () => console.log(this.events)
     deleteEvent(id: number) {
-        // deleteEvent(id)
-        //     .then(() => this.$emit('data-change'))
-        //     .catch(err => this.err = err);
+        eventStore.deleteEvent(id)
+            .then(() => this.$emit('data-change'))
+            .catch(err => this.err = err);
     }
 }
 </script>

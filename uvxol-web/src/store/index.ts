@@ -11,12 +11,10 @@ Vue.use(Vuex);
 // const initializer = (store: Store<any>) => initialize(store);
 // const plugins = [initializer];
 
-export interface IRootState {
-  eventStore: IEventStoreState
+
+export {
+  store: new Vuex.Store({})
 }
-
-
-export default new Vuex.Store<IRootState>({
   // modules: {
   //   eventStore: Events
   // },
@@ -28,7 +26,7 @@ export default new Vuex.Store<IRootState>({
   //   }
   // },
   // plugins
-})
+//});
 
 // const eventStore = getModule(Events, store);
 

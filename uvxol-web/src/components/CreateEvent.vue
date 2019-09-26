@@ -70,7 +70,7 @@ export default class CreateAction extends Vue {
     dependencies = []
     preventions = []
     submit() {
-        eventStore.postEvent(this.name, this.triggers, parseInt(this.duration), parseInt(this.delay), this.actionChoices)
+        eventStore.createEvent(this.name, this.triggers, parseInt(this.duration), parseInt(this.delay), this.actionChoices)
             .then(() => this.err = "success")
             .then(() => this.$emit('data-change'))
             .catch(err => this.err = err)
