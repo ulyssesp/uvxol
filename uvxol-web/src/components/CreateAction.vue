@@ -31,7 +31,6 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Action, ActionTypesMap, VoteOption } from '../types';
-import { lookup } from 'dns';
 import actionStore from '../store/modules/actions';
 
 @Component({
@@ -40,7 +39,7 @@ import actionStore from '../store/modules/actions';
 export default class CreateAction extends Vue {
     @Prop() voteOptions!: VoteOption[];
     items = ['audio', 'video', 'vote'];
-    err = "success";
+    err = "";
     name = "";
     file = "";
     location = "";
@@ -51,7 +50,7 @@ export default class CreateAction extends Vue {
       actionStore.createAction({
         name: this.name, 
         filePath: this.file, 
-        type: ActionTypesMap[this.type], 
+        type: this.type, 
         location: this.location, 
         voteOptions: this.voteOptionChoices, 
         text: this.text

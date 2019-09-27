@@ -1,5 +1,5 @@
 import * as request from 'request-promise-native';
-import { Action, VoteOptionId } from '@/types';
+import { Action, ActionTypesMap, VoteOptionId, TypesActionMap } from '@/types';
 import { array } from 'fp-ts';
 import { mapVoteOption } from './VoteOptions';
 
@@ -13,7 +13,7 @@ export const getActions: () => Promise<Action[]> = () =>
 
 export const mapAction = (a: any) => ({
             id: a.ActionId,
-            type: a.Type,
+            type: TypesActionMap[a.Type],
             file: a.FilePath,
             name: a.Name,
             location: a.Location,
@@ -21,10 +21,10 @@ export const mapAction = (a: any) => ({
         });
 
 export const postAction:
-    (name: string, filePath: string, type: number, location: string, voteOptions: VoteOptionId[], text: string)
+    (name: string, filePath: string, type: string, location: string, voteOptions: VoteOptionId[], text: string)
         => Promise<any> = (name, filePath, type, location, voteOptions, text) =>
             request.post({url: actionsuri, json: true, body: {
-                name, filePath, type, location, voteOptions, text,
+              name, filePath, type: ActionTypesMap[type], location, voteOptions, text,
             }}).promise();
 
 export const deleteAction: (id: number) => Promise<any> =

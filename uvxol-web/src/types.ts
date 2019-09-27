@@ -2,7 +2,7 @@ export type ActionId = number;
 
 export interface Action {
     id: ActionId;
-    type: number;
+    type: string;
     name: string;
     location: string;
     file?: string;
@@ -10,6 +10,7 @@ export interface Action {
 }
 
 export const ActionTypesMap: { [type: string]: number } = { audio: 0, video: 1, vote: 2};
+export const TypesActionMap: { [type: number]: string } = {0: 'audio', 1: 'video', 2: 'vote'};
 
 export type EventId = number;
 

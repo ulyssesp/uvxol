@@ -38,7 +38,7 @@ export default class VoteOptions extends Vue {
   refresh(){
     this.err = 'loading';
     voteOptionStore.getVoteOptions()
-      .then(() => this.err = 'success')
+      .then(() => this.err = 'loaded')
       .catch((e: any) => this.err = e);
   }
   protected mounted() {

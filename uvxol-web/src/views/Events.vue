@@ -22,28 +22,46 @@ import Events from '../store/modules/events';
 import { getModule } from 'vuex-module-decorators';
 import actionStore from '../store/modules/actions';
 import eventStore from '../store/modules/events';
+import voteOptionStore from '../store/modules/voteoptions';
 import { Component, Vue, Watch } from 'vue-property-decorator';
 
 @Component({
   components: { CreateEvent, EventsList },
 })
 export default class EventsView extends Vue {
-  private actions: Action[] = [];
+  private actions: Action[] = actionStore.actionList;
   private events: ActionEvent[] = eventStore.events;
-  private voteOptions: VoteOption[] = [];
-  private err = 'success';
+  private voteOptions: VoteOption[] = voteOptionStore.voteOptions;
+  private err = 'loading';
+  get actionList() {
+    return actionStore.actionList;
+  }
   get eventList() {
     return eventStore.events;
+  }
+  get voteOptionList() {
+    return voteOptionStore.voteOptions;
+  }
+  @Watch('actionList')
+  public updateActions(a: Action[]) {
+    this.actions = a;
   }
   @Watch('eventList')
   public updateEvents(e: ActionEvent[]) {
     this.events = e;
   }
+  @Watch('voteOptionList')
+  public updateVoteOptions(v: VoteOption[]) {
+    this.voteOptions = v;
+  }
   private refresh() {
     this.err = 'loading';
-    eventStore.getEvents()
-      .catch((e: any) => this.err = e)
-      .then(() => this.err = 'success');
+    Promise.all([
+        actionStore.getActions(),
+        eventStore.getEvents(),
+        voteOptionStore.getVoteOptions()
+      ]).catch((e: any) => this.err = e)
+        .then(() => this.err = 'loaded');
   }
   protected mounted() {
     this.refresh();

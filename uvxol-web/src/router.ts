@@ -10,6 +10,7 @@ export default new Router({
     {path: '/actions', component: () => import(/* webpackChunkName: "actions" */ '@/views/Actions.vue')},
     {path: '/events', component: () => import(/* webpackChunkName: "events" */ '@/views/Events.vue')},
     {path: '/voteOptions', component: () => import(/* webpackChunkName: "voteOptions" */ '@/views/VoteOptions.vue')},
+    {path: '/runner', component: () => import(/* webpackChunkName: "runner" */ '@/views/Runner.vue')},
     {path: '/*', redirect: '/actions'},
     {path: '', redirect: '/actions'},
   ],

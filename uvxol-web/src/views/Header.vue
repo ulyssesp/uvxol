@@ -7,6 +7,7 @@
       <router-link to="/actions"><v-btn text>Actions</v-btn></router-link>
       <router-link to="/events"><v-btn text>Events</v-btn></router-link>
       <router-link to="/voteoptions"><v-btn text>Vote Options</v-btn></router-link>
+      <router-link to="/runner"><v-btn text>Runner</v-btn></router-link>
     </v-toolbar-items>
     <v-spacer></v-spacer>
   </v-app-bar>

@@ -29,7 +29,7 @@ import voteOptionStore from '../store/modules/voteoptions';
 export default class Actions extends Vue {
   private voteOptions: VoteOption[] = [];
   private actions: Action[] = [];
-  private err = 'success';
+  private err = 'loading';
   get actionList() {
     return actionStore.actionList;
   }

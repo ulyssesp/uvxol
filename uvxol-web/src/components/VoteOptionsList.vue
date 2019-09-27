@@ -1,7 +1,7 @@
 <template>
     <v-container fluid grid-list-lg>
         <v-row>
-            <h4> Error {{ err }} </h4>
+            <h4> Status: {{ err }} </h4>
         </v-row>
         <v-data-table
             :headers="headers"

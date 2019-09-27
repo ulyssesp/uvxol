@@ -51,7 +51,7 @@ export default class CreateVoteOption extends Vue {
         dependencies: this.dependencies, 
         preventions: this.preventions
       })
-        .then(() => this.err = "success")
+        .then(() => this.err = "loaded")
         .then(() => this.$emit('data-change'))
         .catch((err: any) => 
           {

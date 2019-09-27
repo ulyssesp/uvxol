@@ -1,6 +1,6 @@
 import * as api from '../../api/Actions';
 import * as vmod from 'vuex-module-decorators';
-import { Action, VoteOptionId } from '@/types';
+import { Action, VoteOptionId, TypesActionMap } from '@/types';
 import {array} from 'fp-ts';
 import store from '@/store';
 
@@ -9,7 +9,7 @@ class Actions extends vmod.VuexModule {
   public actionList: Action[] = [];
 
   @vmod.Action({ commit: 'addAction', rawError: true })
-  public async createAction(a: {name: string, filePath: string, type: number,
+  public async createAction(a: {name: string, filePath: string, type: string,
                             location: string, voteOptions: VoteOptionId[], text: string}) {
     return api.postAction(a.name, a.filePath, a.type, a.location, a.voteOptions, a.text);
   }

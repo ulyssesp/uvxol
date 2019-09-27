@@ -60,7 +60,7 @@ export default class CreateAction extends Vue {
     @Prop() actions!: Action[];
     @Prop() events!: ActionEvent[];
     @Prop() voteOptions!: VoteOption[];
-    err = "success";
+    err = "";
     name = "";
     duration = "4000";
     delay = "0";
