@@ -44,7 +44,7 @@ export default class CreateAction extends Vue {
     name = "";
     file = "";
     location = "";
-    type = "";
+    type = "video";
     text = "";
     voteOptionChoices=[];
     submit() {

@@ -8,7 +8,7 @@ import {array} from 'fp-ts';
 class VoteOptions extends VuexModule {
   public voteOptions: VoteOption[] = [];
 
-  @Action({ commit: 'addVoteOption' })
+  @Action({ commit: 'addVoteOption', rawError: true  })
   public async createVoteOption(vo: {name: string, text: string, dependencies: number[], preventions: number[]}) {
     return api.postVoteOption(vo.name, vo.text, vo.dependencies, vo.preventions);
   }

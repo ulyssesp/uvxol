@@ -8,7 +8,7 @@ import {array} from 'fp-ts';
 class Events extends VuexModule {
   public events: ActionEvent[] = [];
 
-  @Action({ commit: 'addEvent' })
+  @Action({ commit: 'addEvent' , rawError: true })
   public async createEvent(a: { name: string, triggers: number[], duration: number, delay: number, actions: number[]}) {
     return api.postEvent(a.name, a.triggers, a.duration, a.delay, a.actions);
   }

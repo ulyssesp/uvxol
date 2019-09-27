@@ -282,6 +282,10 @@ export const deleteAction = async (id:number) =>
                 pool.request()
                     .input('id', sql.Int, id)
                     .query`delete from EventActions where ActionId = @id`)
+            .then(() => 
+                pool.request()
+                    .input('id', sql.Int, id)
+                    .query`delete from ActionVoteOptions where ActionId = @id`)
             .then(() =>
                 pool.request()
                     .input('id', sql.Int, id)
