@@ -25,10 +25,10 @@ import Event from '../components/Event.vue';
   components: { Event }
 })
 export default class EventsList extends Vue {
-  private events: ActionEvent[] = eventStore.events;
+  private events: ActionEvent[] = eventStore.eventsList;
   private err = '';
   get eventList() {
-    return eventStore.events;
+    return eventStore.eventsList;
   }
   @Watch('eventList')
   public updateEvents(e: ActionEvent[]) {

@@ -25,16 +25,11 @@ import voteOptionStore from '../store/modules/voteoptions';
     components: { CreateVoteOption, VoteOptionsList }
 })
 export default class VoteOptions extends Vue {
-  private voteOptions: VoteOption[] = [];
-  private err = "success";
-  get voteOptionList() {
-    return voteOptionStore.voteOptions;
+  private err = "loading";
+
+  get voteOptions() { 
+    return voteOptionStore.voteOptionsList;
   }
-  @Watch('voteOptionList')
-  public updateVoteOptions(vo: VoteOption[]) {
-    this.voteOptions = vo;
-  }
-  
   refresh(){
     this.err = 'loading';
     voteOptionStore.getVoteOptions()

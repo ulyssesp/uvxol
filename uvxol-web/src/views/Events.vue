@@ -29,30 +29,15 @@ import { Component, Vue, Watch } from 'vue-property-decorator';
   components: { CreateEvent, EventsList },
 })
 export default class EventsView extends Vue {
-  private actions: Action[] = actionStore.actionList;
-  private events: ActionEvent[] = eventStore.events;
-  private voteOptions: VoteOption[] = voteOptionStore.voteOptions;
   private err = 'loading';
-  get actionList() {
-    return actionStore.actionList;
+  get actions() {
+    return actionStore.actionsList;
   }
-  get eventList() {
-    return eventStore.events;
+  get events() {
+    return eventStore.eventsList;
   }
-  get voteOptionList() {
-    return voteOptionStore.voteOptions;
-  }
-  @Watch('actionList')
-  public updateActions(a: Action[]) {
-    this.actions = a;
-  }
-  @Watch('eventList')
-  public updateEvents(e: ActionEvent[]) {
-    this.events = e;
-  }
-  @Watch('voteOptionList')
-  public updateVoteOptions(v: VoteOption[]) {
-    this.voteOptions = v;
+  get voteOptions() {
+    return voteOptionStore.voteOptionsList;
   }
   private refresh() {
     this.err = 'loading';

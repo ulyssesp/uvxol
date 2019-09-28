@@ -1,36 +1,53 @@
 import * as api from '../../api/Events';
 import { Module, VuexModule, Action, Mutation, MutationAction, getModule } from 'vuex-module-decorators';
-import { ActionEvent } from '@/types';
+import { ActionEvent, EventId } from '@/types';
 import store from '@/store';
-import {array} from 'fp-ts';
+import { array, task } from 'fp-ts';
+import { pipe } from 'fp-ts/lib/pipeable';
+import Vue from 'vue';
 
 @Module({ dynamic: true, name: 'eventStore', store })
 class Events extends VuexModule {
-  public events: ActionEvent[] = [];
+  public events: { [id: number] : ActionEvent } = {};
+
+  get eventsList() {
+    return Object.values(this.events);
+  }
 
   @Action({ commit: 'addEvent' , rawError: true })
   public async createEvent(a: { name: string, triggers: number[], duration: number, delay: number, actions: number[]}) {
     return api.postEvent(a.name, a.triggers, a.duration, a.delay, a.actions);
   }
 
-  @Action({ commit: 'removeEvent' })
+  @Action({ commit: 'removeEvent' , rawError: true })
   public async deleteEvent(id: number) {
     return api.deleteEvent(id).then(() => id);
   }
 
-  @MutationAction({ mutate: ['events']})
+  @Action({commit: 'addEvents', rawError: true })
+  public async fetchForTrigger(trigger: EventId) {
+    return api.getEventsForTrigger(trigger);
+  }
+
+  @Action({ commit: 'addEvents', rawError: true })
   public async getEvents() {
-    return api.getEvents().then((events: ActionEvent[]) => ({ events }));
+    return api.getEvents();
   }
 
   @Mutation
-  public async addEvent(e: ActionEvent) {
-    return this.events.push(e);
+  public async addEvents(es: ActionEvent[]) {
+    pipe(es, array.map(e => async () => { Vue.set(this.events, e.id, e) }), array.array.sequence(task.task))();
   }
+
+  @Mutation 
+  public async addEvent(e: ActionEvent) {
+     Vue.set(this.events, e.id, e) 
+  }
+
 
   @Mutation
   public async removeEvent(id: number) {
-    array.filter((e: ActionEvent) => e.id !== id)(this.events);
+    delete this.events[id];
   }
 }
 

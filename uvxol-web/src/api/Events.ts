@@ -1,4 +1,4 @@
-import { ActionEvent } from '@/types';
+import { ActionEvent, EventId } from '@/types';
 import { array } from 'fp-ts';
 import { mapAction } from './Actions';
 import { mapVoteOption } from './VoteOptions';
@@ -7,18 +7,26 @@ import rp from 'request-promise-native';
 export const eventsuri = 'https://uvxol-httptrigger.azurewebsites.net/api/events';
 
 export const getEvents: () => Promise<ActionEvent[]> = () =>
-    rp.get({url: eventsuri, json: true })
-        .then((as: ActionEvent[][]) => as[0])
-        .then(array.map((e: any) => ({
-            id: e.EventId,
-            name: e.Name,
-            duration: e.Duration,
-            delay: e.Delay,
-            actions: array.map(mapAction)(e.Actions || []),
-            triggers: array.map((t: any) => t.TriggerId)(e.Triggers || []),
-            dependencies: array.map(mapVoteOption)(e.Dependencies || []),
-            preventions: array.map(mapVoteOption)(e.Preventions || []),
-        })));
+  rp.get({url: eventsuri, json: true })
+    .then((as: ActionEvent[][]) => as[0])
+    .then(array.map(mapEvent));
+
+export const getEventsForTrigger: (triggerId: EventId) => Promise<ActionEvent[]> = (triggerId) =>
+  rp.get({url: eventsuri, qs: { triggerId }, json: true,  })
+    .then((as: ActionEvent[][]) => as[0])
+    .then(array.map(mapEvent));
+
+export const mapEvent: (e: any) => ActionEvent = (e: any) => ({
+  id: e.EventId,
+  name: e.Name,
+  duration: e.Duration,
+  delay: e.Delay,
+  actions: array.map(mapAction)(e.Actions || []),
+  triggers: array.map((t: any) => t.TriggerId)(e.Triggers || []),
+  dependencies: array.map(mapVoteOption)(e.Dependencies || []),
+  preventions: array.map(mapVoteOption)(e.Preventions || []),
+});
+
 
 export const postEvent: (name: string, triggers: number[],
                          duration: number, delay: number,

@@ -2,11 +2,17 @@ import * as api from '../../api/VoteOptions';
 import { Module, VuexModule, Action, Mutation, MutationAction, getModule } from 'vuex-module-decorators';
 import { VoteOption } from '@/types';
 import store from '@/store';
-import {array} from 'fp-ts';
+import { array, task } from 'fp-ts';
+import Vue from 'vue';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 @Module({ dynamic: true, name: 'voteOptionStore', store })
 class VoteOptions extends VuexModule {
-  public voteOptions: VoteOption[] = [];
+  public voteOptions: { [id: number]: VoteOption } = {};
+
+  get voteOptionsList() {
+    return Object.values(this.voteOptions);
+  }
 
   @Action({ commit: 'addVoteOption', rawError: true  })
   public async createVoteOption(vo: {name: string, text: string, dependencies: number[], preventions: number[]}) {
@@ -18,19 +24,26 @@ class VoteOptions extends VuexModule {
     return api.deleteVoteOption(id).then(() => id);
   }
 
-  @MutationAction({ mutate: ['voteOptions']})
+  @Action({ commit: 'addVoteOptions' })
   public async getVoteOptions() {
-    return api.getVoteOptions().then((voteOptions: VoteOption[]) => ({ voteOptions }));
+    return api.getVoteOptions();
   }
 
   @Mutation
-  public async addVoteOption(e: VoteOption) {
-    return this.voteOptions.push(e);
+  public async addVoteOptions(vos: VoteOption[]) {
+    // TODO: use this.addVoteOption correctly (it's not a function)
+    pipe(vos, array.map(vo => async () => { Vue.set(this.voteOptions, vo.id, vo) }),
+        array.array.sequence(task.task))();
+  }
+
+  @Mutation
+  public async addVoteOption(vo: VoteOption) {
+    Vue.set(this.voteOptions, vo.id, vo) 
   }
 
   @Mutation
   public async removeVoteOption(id: number) {
-    array.filter((e: VoteOption) => e.id !== id)(this.voteOptions);
+    delete this.voteOptions[id];
   }
 }
 
