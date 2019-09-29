@@ -17,10 +17,10 @@ export const getEventsForTrigger: (triggerId: EventId) => Promise<ActionEvent[]>
     .then(array.map(mapEvent));
 
 export const mapEvent: (e: any) => ActionEvent = (e: any) => Object.assign(e, {
-  actions: array.map(mapAction)(e.Actions || []),
-  triggers: array.map((t: any) => t.TriggerId)(e.Triggers || []),
-  dependencies: array.map(mapVoteOption)(e.Dependencies || []),
-  preventions: array.map(mapVoteOption)(e.Preventions || []),
+  actions: array.map(mapAction)(e.actions || []),
+  triggers: array.map((t: any) => t.TriggerId)(e.triggers || []),
+  dependencies: array.map(mapVoteOption)(e.dependencies || []),
+  preventions: array.map(mapVoteOption)(e.preventions || []),
 });
 
 

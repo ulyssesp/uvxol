@@ -25,14 +25,9 @@ import Event from '../components/Event.vue';
   components: { Event }
 })
 export default class EventsList extends Vue {
-  private events: ActionEvent[] = eventStore.eventsList;
   private err = '';
-  get eventList() {
+  get events() {
     return eventStore.eventsList;
-  }
-  @Watch('eventList')
-  public updateEvents(e: ActionEvent[]) {
-    this.events = e;
   }
   private refresh() {
     this.err = 'loading';

@@ -16,8 +16,7 @@
               </v-chip-group>
             </v-list-item-title>
             <v-list-item-subtitle>
-              {{ action.file }}
-              <v-list>
+              <v-list v-if="action.type == 'vote'">
                 <v-subheader> votes </v-subheader>
                 <v-list-item v-for="(voteOption, i) in action.voteOptions"
                   :key="i">
@@ -26,6 +25,9 @@
                   </v-list-item-content>
                 </v-list-item>
               </v-list>
+              <div else>
+                {{ action.file }}
+              </div>
             </v-list-item-subtitle>
           </v-list-item-content>
         </v-list-item>

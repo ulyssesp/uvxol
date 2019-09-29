@@ -56,7 +56,6 @@ export default class EventsList extends Vue {
         { text: "triggers", value: "triggers" }, 
         { text: "edit", value: "action" }, 
     ]
-    mounted = () => console.log(this.events)
     deleteEvent(id: number) {
         eventStore.deleteEvent(id)
             .then(() => this.$emit('data-change'))
