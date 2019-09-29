@@ -24,27 +24,54 @@ const connect = new Promise(function(resolve, reject) {
         .catch(reject)
 });
 
-export const getEvents: () => Promise<any> = async function() {
+export const getEvent: (id: EventId) => Promise<any> = async function(id) {
     return connect.then(() => 
-        pool.query`select 
-            EventId, Name, Delay, Duration, 
-            (select ET.TriggerId from EventTriggers as ET
-                where (ET.EventId = E.EventId) for json auto) as Triggers,
-            (select Actions.ActionId, Location, FilePath, Type, Name 
+        pool.request().input('id', sql.Int, id).query`select 
+            EventId as id, Name as name, Delay as delay, Duration as duration, 
+            (select ET.TriggerId as id from EventTriggers as ET
+                where (ET.EventId = E.EventId) for json auto) as triggers,
+            (select Actions.ActionId as id, Location as location, FilePath as filePath, Type as type, Name as name
                 from Actions join EventActions 
                 on (EventActions.EventId = E.EventId and Actions.ActionId = EventActions.ActionId) 
                 for json auto
-            ) as Actions,
-            (select VO.VoteOptionId, VO.Name, VO.Text 
+            ) as actions,
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text
                 from VoteOptions as VO join EventVoteOptions as EVO
                 on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 0)
                 for json auto
-            ) as Dependencies,
-            (select VO.VoteOptionId, VO.Name, VO.Text 
+            ) as dependencies,
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text  as text
                 from VoteOptions as VO join EventVoteOptions as EVO
                 on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 1)
                 for json auto
-            ) as Preventions
+            ) as preventions
+            from Events as E
+            where (E.EventId = @id)
+            for json auto`
+    );
+}
+
+export const getEvents: () => Promise<any> = async function() {
+    return connect.then(() => 
+        pool.query`select 
+            EventId as id, Name as name, Delay as delay, Duration as duration, 
+            (select ET.TriggerId as id from EventTriggers as ET
+                where (ET.EventId = E.EventId) for json auto) as triggers,
+            (select Actions.ActionId as id, Location as location, FilePath as filePath, Type as type, Name as name
+                from Actions join EventActions 
+                on (EventActions.EventId = E.EventId and Actions.ActionId = EventActions.ActionId) 
+                for json auto
+            ) as actions,
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text
+                from VoteOptions as VO join EventVoteOptions as EVO
+                on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 0)
+                for json auto
+            ) as dependencies,
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text
+                from VoteOptions as VO join EventVoteOptions as EVO
+                on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 1)
+                for json auto
+            ) as preventions
             from Events as E
             for json auto`
     );
@@ -81,31 +108,54 @@ export const getEventsForTrigger: (triggerId: number) => Promise<any> = async fu
 }
 
 export const getAction: (id: number) => Promise<any> = async function(id) {
-    return connect.then(() => pool.request().input('id', sql.Int, id).query`select * from Actions where ActionId = @id for json auto`);
+  return connect.then(() => pool.request().input('id', sql.Int, id)
+        .query`select A.ActionId as id, A.Name as name, A.Location as location, A.FilePath as filePath, A.Type as type, 
+            (select VO.VoteOptionId as id, VO.Name as name from VoteOptions as VO 
+                join ActionVoteOptions as AVO
+                on (VO.VoteOptionId = AVO.VoteOptionId and AVO.ActionId = A.ActionId)
+            for json auto) as voteOptions 
+            from Actions as A
+            where A.ActionId = @id
+            for json auto`);
 }
 
 export const getActions: () => Promise<any> = async function() {
     return connect.then(() => 
-        pool.query`select A.ActionId, A.Name, A.Location, A.FilePath, A.Type, 
-            (select VO.VoteOptionId, VO.Name from VoteOptions as VO 
+        pool.query`select A.ActionId as id, A.Name as name, A.Location as location, A.FilePath as filePath, A.Type as type, 
+            (select VO.VoteOptionId as id, VO.Name as name from VoteOptions as VO 
                 join ActionVoteOptions as AVO
                 on (VO.VoteOptionId = AVO.VoteOptionId and AVO.ActionId = A.ActionId)
-            for json auto) as VoteOptions 
+            for json auto) as voteOptions 
             from Actions as A
             for json auto`);
 }
 
-export const getVoteOptions = () => 
-    connect.then(() => pool.query`
-        select VO.VoteOptionId, VO.Name, VO.Text,
-            (select VOD.DependencyId
+export const getVoteOption = (id: number) => 
+    connect.then(() => pool.request().input('id', sql.int, id).query`
+        select VO.VoteOptionId as id, VO.Name as name, VO.Text as text,
+            (select VOD.DependencyId as id
                 from VoteOptionDependencies as VOD 
                 where (VOD.VoteOptionId = VO.VoteOptionId and VOD.Relationship = 0)
-            for json auto) as Dependencies,
-            (select VOD.DependencyId
+            for json auto) as dependencies,
+            (select VOD.DependencyId as id
                 from VoteOptionDependencies as VOD 
                 where (VOD.VoteOptionId = VO.VoteOptionId and VOD.Relationship = 1)
-            for json auto) as Preventions
+            for json auto) as preventions
+        from VoteOptions as VO 
+        where VO.VoteOptionId = @id
+        for json auto`);
+
+export const getVoteOptions = () => 
+    connect.then(() => pool.query`
+        select VO.VoteOptionId as id, VO.Name as name, VO.Text as text,
+            (select VOD.DependencyId as id
+                from VoteOptionDependencies as VOD 
+                where (VOD.VoteOptionId = VO.VoteOptionId and VOD.Relationship = 0)
+            for json auto) as dependencies,
+            (select VOD.DependencyId as id
+                from VoteOptionDependencies as VOD 
+                where (VOD.VoteOptionId = VO.VoteOptionId and VOD.Relationship = 1)
+            for json auto) as preventions
         from VoteOptions as VO 
         for json auto`);
 
@@ -142,7 +192,7 @@ export const insertEvent = async function(
             .input('duration', sql.Int, duration)
             .input('delay', sql.Int, delay)
             .input('name', sql.Text, name)
-            .query`insert into Events (Duration, Delay, Name) output Inserted.EventId values (@duration, @delay, @name)`)
+            .query`insert into Events (Duration, Delay, Name) output Inserted.* values (@duration, @delay, @name)`)
         .then(eventResult => {
             const eventId = eventResult.recordset[0].EventId
 
@@ -175,7 +225,7 @@ export const insertEvent = async function(
                   triggers.length > 0 ? pool.request().bulk(eventTriggers) : Promise.resolve(), 
                   actions.length > 0 ? pool.request().bulk(eventActions) : Promise.resolve() , 
                   dependencies.length + preventions.length > 0 ? pool.request().bulk(eventVoteOptions) : Promise.resolve(), 
-              ]).then(() => eventResult);
+              ]).then(() => getEvent(eventId));
         })
 }
 
@@ -220,6 +270,7 @@ export const insertAction = async function(
                     .then(() => array.reduce(Promise.resolve(), (p, input) => p.then(() => ps.execute(input)))(psinputs))
                     .then(() => ps.unprepare())
                     .catch(() => ps.unprepare())
+                    .then(() => getAction(actionId));
             })
 }
 
@@ -251,6 +302,7 @@ export const insertVoteOption = (name: string, text: string, dependencies: numbe
                     .then(() => array.reduce(Promise.resolve(), (p, input) => p.then(() => ps.execute(input)))(psinputs))
                     .then(() => ps.unprepare())
                     .catch(() => ps.unprepare())
+                    .then(() => getVoteOption(voteOptionId))
             })
 
 export const deleteEvent = async (id:number) => 

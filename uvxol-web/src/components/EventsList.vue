@@ -37,9 +37,9 @@ export default class EventsList extends Vue {
     get flatevents() {
       return array.map((e: ActionEvent) => ({
           ...e, 
-          actions: array.map((a: Action) => a.name)(e.actions).join(),
-          dependencies: array.map<VoteOption, string>(vo => vo.name)(e.dependencies).join(),
-          preventions: array.map<VoteOption, string>(vo => vo.name)(e.preventions).join(),
+          actions: array.map((a: Action) => a.name)(e.actions || []).join(),
+          dependencies: array.map<VoteOption, string>(vo => vo.name)(e.dependencies || []).join(),
+          preventions: array.map<VoteOption, string>(vo => vo.name)(e.preventions || []).join(),
           triggers: array.filterMap(pid => 
               pipe(
                   this.events,

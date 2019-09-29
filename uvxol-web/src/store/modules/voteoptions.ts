@@ -14,24 +14,23 @@ class VoteOptions extends VuexModule {
     return Object.values(this.voteOptions);
   }
 
-  @Action({ commit: 'addVoteOption', rawError: true  })
-  public async createVoteOption(vo: {name: string, text: string, dependencies: number[], preventions: number[]}) {
-    return api.postVoteOption(vo.name, vo.text, vo.dependencies, vo.preventions);
+  @Action({ commit: 'addVoteOption', rawError: true })
+  public async createVoteOption(vo: {name: string, text: string, dependencies: number[], preventions: number[]}): Promise<VoteOption> {
+    return api.postVoteOption(vo.name, vo.text, vo.dependencies, vo.preventions).then(res => res[0][0])
   }
 
-  @Action({ commit: 'removeVoteOption' })
+  @Action({ commit: 'removeVoteOption', rawError: true })
   public async deleteVoteOption(id: number) {
     return api.deleteVoteOption(id).then(() => id);
   }
 
-  @Action({ commit: 'addVoteOptions' })
+  @Action({ commit: 'addVoteOptions', rawError: true })
   public async getVoteOptions() {
     return api.getVoteOptions();
   }
 
   @Mutation
   public async addVoteOptions(vos: VoteOption[]) {
-    // TODO: use this.addVoteOption correctly (it's not a function)
     pipe(vos, array.map(vo => async () => { Vue.set(this.voteOptions, vo.id, vo) }),
         array.array.sequence(task.task))();
   }
@@ -43,7 +42,7 @@ class VoteOptions extends VuexModule {
 
   @Mutation
   public async removeVoteOption(id: number) {
-    delete this.voteOptions[id];
+    Vue.delete(this.voteOptions, id);
   }
 }
 

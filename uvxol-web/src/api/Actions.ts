@@ -11,12 +11,8 @@ export const getActions: () => Promise<Action[]> = () =>
         .then((as: Action[][]) => as[0])
         .then(array.map(mapAction));
 
-export const mapAction = (a: any) => ({
-            id: a.ActionId,
-            type: TypesActionMap[a.Type],
-            file: a.FilePath,
-            name: a.Name,
-            location: a.Location,
+export const mapAction = (a: any) => Object.assign(a, {
+            type: TypesActionMap[a.type],
             voteOptions: array.map(mapVoteOption)(a.VoteOptions || []),
         });
 

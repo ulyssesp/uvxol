@@ -29,6 +29,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             req.body.preventions || [],
             req.body.delay
         )
+        .then(res => res.recordset[0][0])
         .catch(err => { context.log(err); return { err }});
     } else if (req.method === "DELETE") {
         body = await db.deleteEvent(id)

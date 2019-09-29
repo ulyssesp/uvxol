@@ -11,6 +11,7 @@ class Events extends VuexModule {
   public events: { [id: number] : ActionEvent } = {};
 
   get eventsList() {
+    console.log(Object.values(this.events));
     return Object.values(this.events);
   }
 
@@ -41,7 +42,8 @@ class Events extends VuexModule {
 
   @Mutation 
   public async addEvent(e: ActionEvent) {
-     Vue.set(this.events, e.id, e) 
+    console.log(JSON.stringify(e));
+     Vue.set(this.events, e.id, e);
   }
 
 

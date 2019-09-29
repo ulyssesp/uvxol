@@ -5,7 +5,7 @@
         </v-row>
         <v-data-table
             :headers="headers"
-            :items="flatVoteOptions()"
+            :items="flatVoteOptions"
             :items-per-page="10"
             class="elevation-1"
         >
@@ -29,22 +29,23 @@ import voteOptionStore from '@/store/modules/voteoptions';
 export default class VoteOptionsList extends Vue {
     @Prop({required:true}) voteOptions!: VoteOption[];
     @Prop({}) err!: string;
-    flatVoteOptions = () =>
-        array.map((vo: VoteOption) => 
+    get flatVoteOptions() {
+      return array.map((vo: VoteOption) => 
         ({...vo, 
-            preventions: array.filterMap(pid => 
-                pipe(
-                    this.voteOptions,
-                    array.findFirst((vop: VoteOption) => pid === vop.id),
-                    option.map(vo => vo.name)
-                ))(vo.preventions).join(),
-            dependencies: array.filterMap(pid => 
-                pipe(
-                    this.voteOptions,
-                    array.findFirst((vop: VoteOption) => pid === vop.id),
-                    option.map(vo => vo.name)
-                ))(vo.dependencies).join(),
+          preventions: array.filterMap(pid => 
+            pipe(
+              this.voteOptions,
+              array.findFirst((vop: VoteOption) => pid === vop.id),
+              option.map(vo => vo.name)
+            ))(vo.preventions || []).join(),
+          dependencies: array.filterMap(pid => 
+            pipe(
+              this.voteOptions,
+              array.findFirst((vop: VoteOption) => pid === vop.id),
+              option.map(vo => vo.name)
+            ))(vo.dependencies || []).join(),
         }))(this.voteOptions)
+    }
     headers = [
         { text: "name", value: "name" }, 
         { text: "text", value: "text" }, 

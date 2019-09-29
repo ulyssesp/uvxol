@@ -35,7 +35,7 @@ export default class ActionsList extends Vue {
   }
   headers = [
       { text: "name", value: "name" }, 
-      { text: "file", value: "file" }, 
+      { text: "file", value: "filePath" }, 
       { text: "location", value: "location" }, 
       { text: "type", value: "type" }, 
       { text: "voteOptions", value: "voteOptions" }, 

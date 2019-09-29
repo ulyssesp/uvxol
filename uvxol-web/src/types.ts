@@ -5,7 +5,7 @@ export interface Action {
     type: string;
     name: string;
     location: string;
-    file?: string;
+    filePath?: string;
     voteOptions?: VoteOption[];
 }
 

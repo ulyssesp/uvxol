@@ -16,11 +16,7 @@ export const getEventsForTrigger: (triggerId: EventId) => Promise<ActionEvent[]>
     .then((as: ActionEvent[][]) => as[0])
     .then(array.map(mapEvent));
 
-export const mapEvent: (e: any) => ActionEvent = (e: any) => ({
-  id: e.EventId,
-  name: e.Name,
-  duration: e.Duration,
-  delay: e.Delay,
+export const mapEvent: (e: any) => ActionEvent = (e: any) => Object.assign(e, {
   actions: array.map(mapAction)(e.Actions || []),
   triggers: array.map((t: any) => t.TriggerId)(e.Triggers || []),
   dependencies: array.map(mapVoteOption)(e.Dependencies || []),

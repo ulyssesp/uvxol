@@ -16,12 +16,9 @@ export const getEventVoteOptions: () => Promise<VoteOption[]> = () =>
         .then(array.map(mapVoteOption));
 
 export const mapVoteOption: (a: any) => VoteOption =
-    (a: any) => ({
-            id: a.VoteOptionId,
-            name: a.Name,
-            text: a.Text,
-            dependencies: array.map((d: any) => d.DependencyId)(a.Dependencies || []),
-            preventions: array.map((d: any) => d.DependencyId)(a.Preventions || []),
+  (a: any) => Object.assign(a, {
+            dependencies: array.map((d: any) => d.DependencyId)(a.dependencies || []),
+            preventions: array.map((d: any) => d.DependencyId)(a.preventions || []),
         });
 
 export const postVoteOption: (name: string, text: string, dependencies: number[], preventions: number[])
