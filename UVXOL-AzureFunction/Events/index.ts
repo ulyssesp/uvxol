@@ -12,7 +12,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (req.method === "GET") {
         if (triggerId != null) {
             body = 
-                await db.getEventsForTrigger(triggerId)
+                await (triggerId == -1 ? db.getStartEvents() : db.getEventsForTrigger(triggerId))
                     .then(res => res.recordset)
                     .catch(err => { context.log(err); return { err }});
         } else {

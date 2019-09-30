@@ -16,6 +16,11 @@ export const getEventsForTrigger: (triggerId: EventId) => Promise<ActionEvent[]>
     .then((as: ActionEvent[][]) => as[0])
     .then(array.map(mapEvent));
 
+export const getStartEvents = () =>
+  rp.get({url: eventsuri, qs: { triggerId: -1 }, json: true,  })
+    .then((as: ActionEvent[][]) => as[0])
+    .then(array.map(mapEvent));
+
 export const mapEvent: (e: any) => ActionEvent = (e: any) => Object.assign(e, {
   actions: array.map(mapAction)(e.actions || []),
   triggers: array.map((t: any) => t.TriggerId)(e.triggers || []),

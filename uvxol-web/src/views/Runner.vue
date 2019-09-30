@@ -3,6 +3,9 @@
       <v-row>
         <h4> Status: {{ err }} </h4>
       </v-row>
+      <v-row>
+        <v-btn @click="start()">Start</v-btn>
+      </v-row>
       <v-row justify="space-around"
         v-for="(actionEvent, i) in events"
           :key="i">
@@ -18,7 +21,7 @@ import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
 import { ActionEvent, Action, VoteOption } from '../types'
 import { array, option } from 'fp-ts';
 import { pipe } from 'fp-ts/lib/pipeable';
-import eventStore from '../store/modules/events';
+import runStore from '../store/modules/run';
 import Event from '../components/Event.vue';
 
 @Component({
@@ -27,17 +30,20 @@ import Event from '../components/Event.vue';
 export default class EventsList extends Vue {
   private err = '';
   get events() {
-    return eventStore.eventsList;
+    return runStore.runList;
   }
   private refresh() {
     this.err = 'loading';
     Promise.all([
-        eventStore.getEvents(),
+        runStore.start(),
       ]).catch((e: any) => this.err = e)
         .then(() => this.err = 'loaded');
   }
   protected mounted() {
     this.refresh();
+  }
+  async start() {
+    runStore.start()
   }
 }
 </script>
