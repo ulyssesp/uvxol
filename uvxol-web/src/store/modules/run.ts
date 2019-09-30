@@ -52,19 +52,18 @@ class Run extends VuexModule {
     );
 
   static reset: (self: any) => task.Task<any> = self => async () => {
-    self.runlist = [];
-    self.chosenVoteOptions.clear();
+    self.runList = [];
   };
 
-  public runList: ActionEvent[] = [];
-  public chosenVoteOptions: Set<VoteOptionId> = new Set();
+  private runList: ActionEvent[] = [];
+  private chosenVoteOptions: Set<VoteOptionId> = new Set();
 
-  @Action({ commit: 'runEvents', rawError: true })
+  get log() {
+    return this.runList;
+  }
+
+  @Action({ commit: 'restart', rawError: true })
   public async start() {
-    return pipe(
-      Run.reset(this),
-      task.chain(_ => constant(eventStore.getStartEvents())),
-      task.chain(_ => task.of(eventStore.startEvents)))()
   }
 
   @Action({ commit: 'addVote', rawError: true })
@@ -73,18 +72,27 @@ class Run extends VuexModule {
   }
 
   @Mutation
-  public async runEvents(es: ActionEvent[]) {
+  public async restart() {
     return pipe(
-      es,
-      set.fromArray(eq.eq.contramap(eq.eqNumber, e => e.id)),
-      Run.runEvents(this),
-      array.array.sequence(task.task)
+      task.fromIO(() => {
+        this.runList = [];
+        this.chosenVoteOptions.clear()
+      }),
+      task.chain(_ => constant(eventStore.getStartEvents())),
+      task.chain(_ => task.of(eventStore.startEvents)),
+      task.map(set.fromArray(eq.eq.contramap(eq.eqNumber, e => e.id))),
+      task.chain(flow(Run.runEvents(this), array.array.sequence(task.task)))
     )();
   }
 
   @Mutation
   public async addVote(v: VoteOptionId) {
     this.chosenVoteOptions.add(v);
+  }
+
+  @Mutation
+  public async reset() {
+    this.runList = [];
   }
 }
 

@@ -8,7 +8,7 @@
       </v-row>
       <v-row justify="space-around"
         v-for="(actionEvent, i) in events"
-          :key="i">
+        :key="i">
         <v-col >
           <Event v-bind:event="actionEvent"></Event>
         </v-col>
@@ -30,7 +30,7 @@ import Event from '../components/Event.vue';
 export default class EventsList extends Vue {
   private err = '';
   get events() {
-    return array.reverse(runStore.runList);
+    return array.reverse(runStore.log);
   }
   private refresh() {
     this.err = 'loading';
