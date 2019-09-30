@@ -30,7 +30,7 @@ import Event from '../components/Event.vue';
 export default class EventsList extends Vue {
   private err = '';
   get events() {
-    return runStore.runList;
+    return array.reverse(runStore.runList);
   }
   private refresh() {
     this.err = 'loading';

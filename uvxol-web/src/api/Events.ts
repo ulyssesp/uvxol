@@ -8,12 +8,12 @@ export const eventsuri = 'https://uvxol-httptrigger.azurewebsites.net/api/events
 
 export const getEvents: () => Promise<ActionEvent[]> = () =>
   rp.get({url: eventsuri, json: true })
-    .then((as: ActionEvent[][]) => as[0])
+    .then((as: ActionEvent[][]) => as[0] || [])
     .then(array.map(mapEvent));
 
 export const getEventsForTrigger: (triggerId: EventId) => Promise<ActionEvent[]> = (triggerId) =>
   rp.get({url: eventsuri, qs: { triggerId }, json: true,  })
-    .then((as: ActionEvent[][]) => as[0])
+    .then((as: ActionEvent[][]) => as[0] || [])
     .then(array.map(mapEvent));
 
 export const getStartEvents = () =>
@@ -23,7 +23,7 @@ export const getStartEvents = () =>
 
 export const mapEvent: (e: any) => ActionEvent = (e: any) => Object.assign(e, {
   actions: array.map(mapAction)(e.actions || []),
-  triggers: array.map((t: any) => t.TriggerId)(e.triggers || []),
+  triggers: array.map((t: any) => t.id)(e.triggers || []),
   dependencies: array.map(mapVoteOption)(e.dependencies || []),
   preventions: array.map(mapVoteOption)(e.preventions || []),
 });

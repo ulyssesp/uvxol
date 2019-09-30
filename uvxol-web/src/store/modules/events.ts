@@ -3,7 +3,7 @@ import Vue from 'vue';
 import { Module, VuexModule, Action, Mutation, MutationAction, getModule } from 'vuex-module-decorators';
 import { ActionEvent, EventId } from '@/types';
 import store from '@/store';
-import { array, task, set } from 'fp-ts';
+import { array, task, set, eq } from 'fp-ts';
 import { pipe } from 'fp-ts/lib/pipeable';
 import { constant, flow } from 'fp-ts/lib/function';
 
@@ -11,14 +11,18 @@ import { constant, flow } from 'fp-ts/lib/function';
 @Module({ dynamic: true, name: 'eventStore', store })
 class Events extends VuexModule {
   public events: { [id: number] : ActionEvent } = {};
-  public eventsByTrigger: { [id: number]: Set<ActionEvent> } = {};
+  public eventsByTrigger: { [id: number]: Set<number> } = {};
 
-  static addEvent: (self: any) => (e: ActionEvent) => Promise<any> = (self: any) =>
+  static addEvent: (self: Events) => (e: ActionEvent) => Promise<any> = (self: any) =>
     flow(
       task.of,
-      task.chainFirst(e => async () =>  { Vue.set(self.events, e.id, e) }),
+      task.chainFirst(e => async () => { Vue.set(self.events, e.id, e) }),
       task.chainFirst(e => 
-        pipe(e.triggers, array.map(triggerId => async () => Vue.set(self.eventsByTrigger, triggerId, e.id)),
+        pipe(e.triggers, 
+          array.map(triggerId => async () => {
+            Vue.set(self.eventsByTrigger, triggerId, 
+              set.union(eq.eqNumber)(self.eventsByTrigger[triggerId] || set.empty, set.singleton(e.id)))
+          }),
           array.array.sequence(task.task))),
       t => t()
     );
@@ -58,7 +62,6 @@ class Events extends VuexModule {
 
   @Action({ commit: 'addEventsAction', rawError: true })
   public async getEventsForTrigger(id: number) {
-    console.log(id);
     return api.getEventsForTrigger(id);
   }
 

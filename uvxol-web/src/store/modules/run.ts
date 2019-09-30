@@ -36,7 +36,11 @@ class Run extends VuexModule {
           array.array.sequence(task.taskSeq)([
             pipe(task.fromIO(() => { self.runList.push(e); }), task.delay(e.delay || 0)),
             pipe(
-              async () => eventStore.eventsByTrigger[e.id],
+              async () => option.fromNullable(eventStore.eventsByTrigger[e.id]),
+              task.map(option.map(
+                set.filterMap(eq.eq.contramap(eq.eqNumber, (e: ActionEvent) => e.id))
+                    (id => option.fromNullable(eventStore.events[id])))),
+              task.map(option.getOrElse(constant(set.empty as Set<ActionEvent>))),
               task.chain(flow(Run.runEvents(self), array.array.sequence(task.task))),
               task.map(constVoid),
               task.delay(e.duration))
@@ -71,7 +75,7 @@ class Run extends VuexModule {
   @Mutation
   public async runEvents(es: ActionEvent[]) {
     return pipe(
-      es, 
+      es,
       set.fromArray(eq.eq.contramap(eq.eqNumber, e => e.id)),
       Run.runEvents(this),
       array.array.sequence(task.task)

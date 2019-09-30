@@ -83,7 +83,7 @@ export const getEventsForTrigger: (triggerId: number) => Promise<any> = async fu
         pool.request()
             .input('triggerId', sql.Int, triggerId)
             .query`select 
-            EventId as id, Name as name, Delay as delay, Duration as duration, 
+            E.EventId as id, Name as name, Delay as delay, Duration as duration, 
             (select ET.TriggerId as id from EventTriggers as ET
                 where (ET.EventId = E.EventId) for json auto) as triggers,
             (select Actions.ActionId as id, Location as location, FilePath as filePath, Type as type, Name as name,
