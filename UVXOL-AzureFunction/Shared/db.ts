@@ -245,21 +245,28 @@ export const insertEvent = async function(
                 eventActions.rows.add(eventId, action)
             });
 
-            const eventVoteOptions = new sql.Table("EventVoteOptions")
-            eventVoteOptions.columns.add('EventId', sql.Int);
-            eventVoteOptions.columns.add('VoteOptionId', sql.Int);
-            eventVoteOptions.columns.add('Relationship', sql.Int);
+            const ps = new sql.PreparedStatement(pool)
+            ps.input('eventId', sql.Int)
+            ps.input('voteOptionId', sql.Int)
+            ps.input('relationship', sql.Int)
+            var psinputs = []
             dependencies.forEach(dep => {
-                eventVoteOptions.rows.add(eventId, dep, 0)
+                psinputs.push({eventId, voteOptionId: dep, relationship: 0})
             });
+
             preventions.forEach(prev => {
-                eventVoteOptions.rows.add(eventId, prev, 0)
+                psinputs.push({eventId, voteOptionId: prev, relationship: 1})
             });
 
             return Promise.all([
                   triggers.length > 0 ? pool.request().bulk(eventTriggers) : Promise.resolve(), 
                   actions.length > 0 ? pool.request().bulk(eventActions) : Promise.resolve() , 
-                  dependencies.length + preventions.length > 0 ? pool.request().bulk(eventVoteOptions) : Promise.resolve(), 
+                  ps.prepare(`insert into EventVoteOptions 
+                              (EventId, VoteOptionId, Relationship) values
+                              (@eventId, @voteOptionId, @relationship)`)
+                    .then(() => array.reduce(Promise.resolve(), (p, input) => p.then(() => ps.execute(input)))(psinputs))
+                    .then(ps.unprepare())
+                    .catch(ps.unprepare())
               ]).then(() => getEvent(eventId));
         })
 }

@@ -36,8 +36,12 @@ class Events extends VuexModule {
   }
 
   @Action({ commit: 'addEventAction' , rawError: true })
-  public async createEvent(a: { name: string, triggers: number[], duration: number, delay: number, actions: number[]}) {
-    return api.postEvent(a.name, a.triggers, a.duration, a.delay, a.actions);
+  public async createEvent(a: { 
+    name: string, triggers: number[], 
+    duration: number, delay: number, 
+    actions: number[], dependencies: number[], preventions: number[]}) {
+    console.log("posting?");
+    return api.postEvent(a.name, a.triggers, a.duration, a.delay, a.actions, a.dependencies, a.preventions);
   }
 
   @Action({ commit: 'removeEvent' , rawError: true })

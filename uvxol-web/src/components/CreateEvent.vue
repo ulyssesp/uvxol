@@ -74,7 +74,9 @@ export default class CreateAction extends Vue {
         triggers: this.triggers, 
         duration: parseInt(this.duration), 
         delay: parseInt(this.delay), 
-        actions: this.actionChoices
+        actions: this.actionChoices,
+        preventions: this.preventions,
+        dependencies: this.dependencies
       }).then(() => this.err = "success")
         .then(() => this.$emit('data-change'))
         .catch((err: any) => 
