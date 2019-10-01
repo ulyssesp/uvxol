@@ -1,9 +1,9 @@
 import Vue from 'vue';
 import { Module, VuexModule, Action, Mutation, MutationAction, getModule } from 'vuex-module-decorators';
-import { ActionEvent, EventId, VoteOption, VoteOptionId } from '@/types';
+import { ActionEvent, EventId, VoteOption, VoteOptionId, ActionId } from '@/types';
 import store from '@/store';
 import eventStore from './events';
-import { task, array, set, eq, option, semigroup, ord } from 'fp-ts';
+import { task, array, set, eq, option, semigroup, ord, nonEmptyArray, tuple } from 'fp-ts';
 import { flow, constVoid, constant, identity } from 'fp-ts/lib/function';
 import { pipe } from 'fp-ts/lib/pipeable';
 
@@ -24,8 +24,8 @@ class Run extends VuexModule {
       option.chainFirst(e => pipe(
         array.getMonoid<boolean>()
           .concat(
-            array.map((d: VoteOption) => set.elem(eq.eqNumber)(d.id, self.chosenVoteOptions))(e.dependencies),
-            array.map((d: VoteOption) => !set.elem(eq.eqNumber)(d.id, self.chosenVoteOptions))(e.preventions),
+            array.map((d: VoteOption) => self.chosenVoteOptions[d.id] !== undefined)(e.dependencies),
+            array.map((d: VoteOption) => self.chosenVoteOptions[d.id] === undefined)(e.preventions),
           ),
         ds => semigroup.fold(semigroup.semigroupAll)(true, ds),
         option.fromPredicate(identity)
@@ -36,7 +36,23 @@ class Run extends VuexModule {
           array.array.sequence(task.taskSeq)([
             pipe(task.fromIO(() => { self.runList.push(e); }), task.delay(e.delay || 0)),
             pipe(
-              async () => option.fromNullable(eventStore.eventsByTrigger[e.id]),
+              task.fromIO(() => pipe(
+                e.actions, 
+                array.filterMap(a => option.fromNullable(self.pendingVoteOptions[a.id])),
+                array.map(flow(
+                  array.sort(ord.ordNumber), 
+                  array.chop(as => {
+                    const { init, rest } = array.spanLeft((a: number) => eq.eqNumber.equals(a, as[0]))(as)
+                    return [init, rest];
+                  }),
+                  array.map(arr => [arr[0], arr.length] as [number, number]),
+                  nonEmptyArray.fromArray,
+                  option.map(nonEmptyArray.max(ord.ord.contramap(ord.ordNumber, e => e[1]))),
+                  option.map(tuple.fst),
+                  option.map(r => Vue.set(self.chosenVoteOptions, r, r)),
+                )),
+              )),
+              task.chain(_ => async () => option.fromNullable(eventStore.eventsByTrigger[e.id])),
               task.map(option.map(
                 set.filterMap(eq.eq.contramap(eq.eqNumber, (e: ActionEvent) => e.id))
                     (id => option.fromNullable(eventStore.events[id])))),
@@ -55,8 +71,9 @@ class Run extends VuexModule {
     self.runList = [];
   };
 
-  private runList: ActionEvent[] = [];
-  private chosenVoteOptions: Set<VoteOptionId> = new Set();
+  public runList: ActionEvent[] = [];
+  public chosenVoteOptions: { [id: number]: number } = {};
+  public pendingVoteOptions: { [ id: number ] : Array<number> } = {};
 
   get log() {
     return this.runList;
@@ -67,8 +84,8 @@ class Run extends VuexModule {
   }
 
   @Action({ commit: 'addVote', rawError: true })
-  public async chooseVote(v: VoteOptionId) {
-    return v;
+  public async chooseVote(va: [VoteOptionId, ActionId]) {
+    return va;
   }
 
   @Mutation
@@ -76,7 +93,7 @@ class Run extends VuexModule {
     return pipe(
       task.fromIO(() => {
         this.runList = [];
-        this.chosenVoteOptions.clear()
+        this.chosenVoteOptions = {}
       }),
       task.chain(_ => constant(eventStore.getStartEvents())),
       task.chain(_ => task.of(eventStore.startEvents)),
@@ -86,8 +103,8 @@ class Run extends VuexModule {
   }
 
   @Mutation
-  public async addVote(v: VoteOptionId) {
-    this.chosenVoteOptions.add(v);
+  public async addVote([v, a]: [VoteOptionId, ActionId]) {
+    Vue.set(this.pendingVoteOptions, a, array.cons(v, this.pendingVoteOptions[a] || []));
   }
 
   @Mutation

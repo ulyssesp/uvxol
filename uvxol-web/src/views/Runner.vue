@@ -6,6 +6,9 @@
       <v-row>
         <v-btn @click="start()">Start</v-btn>
       </v-row>
+      <v-row>
+        {{ chosenVoteOptions }}
+      </v-row>
       <v-row justify="space-around"
         v-for="(actionEvent, i) in events"
         :key="i">
@@ -31,6 +34,9 @@ export default class EventsList extends Vue {
   private err = '';
   get events() {
     return array.reverse(runStore.log);
+  }
+  get chosenVoteOptions() {
+    return Object.keys(runStore.chosenVoteOptions).join(',');
   }
   private refresh() {
     this.err = 'loading';

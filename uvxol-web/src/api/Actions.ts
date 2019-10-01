@@ -8,12 +8,12 @@ export const actionsuri = 'https://uvxol-httptrigger.azurewebsites.net/api/actio
 
 export const getActions: () => Promise<Action[]> = () =>
     request.get({url: actionsuri, json: true })
-        .then((as: Action[][]) => as[0])
+        .then((as: any[][]) => as[0])
         .then(array.map(mapAction));
 
 export const mapAction = (a: any) => Object.assign(a, {
             type: TypesActionMap[a.type],
-            voteOptions: array.map(mapVoteOption)(a.VoteOptions || []),
+            voteOptions: array.map(mapVoteOption)(a.voteOptions || []),
         });
 
 export const postAction:

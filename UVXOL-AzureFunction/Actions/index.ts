@@ -27,7 +27,8 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             req.body.voteOptions,
             req.body.text,
             req.body.filePath
-        ).then(() => ({message: "success"}))
+        )
+        .then(res => res.recordset[0][0])
         .catch(err => { context.log(err); return { err }});
     } else if (req.method === "DELETE") {
         body = await db.deleteAction(id)
