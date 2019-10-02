@@ -8,11 +8,14 @@ import { pipe } from 'fp-ts/lib/pipeable';
 import { constant, flow, identity } from 'fp-ts/lib/function';
 import voteOptionStore from './voteoptions';
 
+import { logid, logval } from '../../utils/fp-utils';
+
 const storeVoteOptions: (a: ActionEvent[]) => task.Task<ActionEvent[]> = es => pipe(
         es,
         array.chain(e => e.actions),
         array.chain(a => a.voteOptions || []),
         task.of,
+        logid(task.task),
         task.chainFirst(flow(voteOptionStore.insertVoteOptions, constant)),
         task.chain(constant(task.of(es)))
 );
@@ -23,7 +26,7 @@ class Events extends VuexModule {
   public events: { [id: number] : ActionEvent } = {};
   public eventsByTrigger: { [id: number]: Set<number> } = {};
 
-  static addEvent: (self: Events) => (e: ActionEvent) => Promise<any> = (self: any) =>
+  static addEvent: (self: Events) => (e: ActionEvent) => Promise<ActionEvent> = (self: Events) =>
     flow(
       task.of,
       task.chainFirst(e => async () => { Vue.set(self.events, e.id, e) }),
@@ -60,8 +63,7 @@ class Events extends VuexModule {
 
   @Action({commit: 'addEventsAction', rawError: true })
   public async fetchForTrigger(trigger: EventId) {
-    return api.getEventsForTrigger(trigger)
-      .then(storeVoteOptions);
+    return api.getEventsForTrigger(trigger);
   }
 
   @Action({ commit: 'addEventsAction', rawError: true })
@@ -81,7 +83,12 @@ class Events extends VuexModule {
 
   @Mutation
   public async addEventsAction(es: ActionEvent[]) {
-    return pipe(es, array.map(flow(Events.addEvent(this), constant)), array.array.sequence(task.task))();
+    return pipe(
+      es,
+      array.map(flow(Events.addEvent(this), constant)), 
+      array.array.sequence(task.task),
+      task.chainFirst(storeVoteOptions)
+    )();
   }
 
   @Mutation

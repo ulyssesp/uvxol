@@ -9,11 +9,26 @@
       <v-row>
         {{ chosenVoteOptions }}
       </v-row>
-      <v-row justify="space-around"
-        v-for="(actionEvent, i) in events"
-        :key="i">
-        <v-col >
-          <Event v-bind:event="actionEvent"></Event>
+      <v-row>
+        <v-col cols="2">
+          <v-row>
+            <v-subheader> Events </v-subheader>
+          </v-row>
+          <v-row v-for="(event, i) in events" :key="i" class="mb-2 pa-1">
+            <Event v-bind:event="event"></Event>
+          </v-row>
+        </v-col>
+        <v-col v-for="(location, i) in actionLogByLocation" :key="i" cols="3">
+          <v-row>
+            <v-subheader> {{ location[0] }} </v-subheader>
+          </v-row>
+          <v-row
+             v-for="(action, i) in location[1]"
+             :key="i"
+             class="mb-2 pa-1"
+            >
+            <ActionC v-bind:action="action"></ActionC>
+          </v-row>
         </v-col>
       </v-row>
     </v-container>
@@ -24,18 +39,34 @@ import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
 import { ActionEvent, Action, VoteOption } from '../types'
 import { array, option, show } from 'fp-ts';
 import { pipe } from 'fp-ts/lib/pipeable';
+import { constant } from 'fp-ts/lib/function';
 import runStore from '../store/modules/run';
 import voteOptionStore from '../store/modules/voteoptions';
 import Event from '../components/Event.vue';
+import ActionC from '../components/Action.vue';
 import * as sg from 'fp-ts/lib/Semigroup';
 import * as fold from 'fp-ts/lib/Foldable';
 import * as m from 'fp-ts/lib/Monoid';
+import * as na from 'fp-ts/lib/NonEmptyArray';
+import * as r from 'fp-ts/lib/Record';
+
+import { logid, logval } from '../utils/fp-utils';
 
 @Component({
-  components: { Event }
+  components: { ActionC, Event }
 })
 export default class EventsList extends Vue {
   private err = '';
+  get actionLogByLocation() {
+    return pipe(
+      this.log,
+      array.chain(e => e.actions),
+      na.fromArray,
+      option.map(na.groupBy(a => a.location.toLowerCase())),
+      option.map(r.toArray),
+      option.getOrElse(constant([] as [string, na.NonEmptyArray<Action>][]))
+    );
+  }
   get log() {
     return runStore.log;
   }
@@ -46,6 +77,7 @@ export default class EventsList extends Vue {
     return pipe(
       runStore.chosenVoteOptions,
       Object.values,
+      logval(array.array)(voteOptionStore.voteOptions),
       array.map(k => voteOptionStore.voteOptions[k].name),
       vos => fold.intercalate(m.monoidString, array.array)(', ', vos),
       s => 'ChosenVoteOptions: ' + s
