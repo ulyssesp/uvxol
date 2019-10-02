@@ -3,6 +3,7 @@ import { Module, VuexModule, Action, Mutation, MutationAction, getModule } from 
 import { ActionEvent, EventId, VoteOption, VoteOptionId, ActionId } from '@/types';
 import store from '@/store';
 import eventStore from './events';
+import voteOptionStore from './voteoptions';
 import { task, array, set, eq, option, semigroup, ord, nonEmptyArray, tuple } from 'fp-ts';
 import { flow, constVoid, constant, identity } from 'fp-ts/lib/function';
 import { pipe } from 'fp-ts/lib/pipeable';

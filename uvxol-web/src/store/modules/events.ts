@@ -5,7 +5,17 @@ import { ActionEvent, EventId } from '@/types';
 import store from '@/store';
 import { array, task, set, eq } from 'fp-ts';
 import { pipe } from 'fp-ts/lib/pipeable';
-import { constant, flow } from 'fp-ts/lib/function';
+import { constant, flow, identity } from 'fp-ts/lib/function';
+import voteOptionStore from './voteoptions';
+
+const storeVoteOptions: (a: ActionEvent[]) => task.Task<ActionEvent[]> = es => pipe(
+        es,
+        array.chain(e => e.actions),
+        array.chain(a => a.voteOptions || []),
+        task.of,
+        task.chainFirst(flow(voteOptionStore.insertVoteOptions, constant)),
+        task.chain(constant(task.of(es)))
+);
 
 
 @Module({ dynamic: true, name: 'eventStore', store })
@@ -40,7 +50,6 @@ class Events extends VuexModule {
     name: string, triggers: number[], 
     duration: number, delay: number, 
     actions: number[], dependencies: number[], preventions: number[]}) {
-    console.log("posting?");
     return api.postEvent(a.name, a.triggers, a.duration, a.delay, a.actions, a.dependencies, a.preventions);
   }
 
@@ -51,7 +60,8 @@ class Events extends VuexModule {
 
   @Action({commit: 'addEventsAction', rawError: true })
   public async fetchForTrigger(trigger: EventId) {
-    return api.getEventsForTrigger(trigger);
+    return api.getEventsForTrigger(trigger)
+      .then(storeVoteOptions);
   }
 
   @Action({ commit: 'addEventsAction', rawError: true })

@@ -22,21 +22,34 @@
 <script lang="ts">
 import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
 import { ActionEvent, Action, VoteOption } from '../types'
-import { array, option } from 'fp-ts';
+import { array, option, show } from 'fp-ts';
 import { pipe } from 'fp-ts/lib/pipeable';
 import runStore from '../store/modules/run';
+import voteOptionStore from '../store/modules/voteoptions';
 import Event from '../components/Event.vue';
+import * as sg from 'fp-ts/lib/Semigroup';
+import * as fold from 'fp-ts/lib/Foldable';
+import * as m from 'fp-ts/lib/Monoid';
 
 @Component({
   components: { Event }
 })
 export default class EventsList extends Vue {
   private err = '';
+  get log() {
+    return runStore.log;
+  }
   get events() {
-    return array.reverse(runStore.log);
+    return array.reverse(this.log);
   }
   get chosenVoteOptions() {
-    return Object.keys(runStore.chosenVoteOptions).join(',');
+    return pipe(
+      runStore.chosenVoteOptions,
+      Object.values,
+      array.map(k => voteOptionStore.voteOptions[k].name),
+      vos => fold.intercalate(m.monoidString, array.array)(', ', vos),
+      s => 'ChosenVoteOptions: ' + s
+    );
   }
   private refresh() {
     this.err = 'loading';

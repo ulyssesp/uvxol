@@ -29,15 +29,20 @@ class VoteOptions extends VuexModule {
     return api.getVoteOptions();
   }
 
+  @Action({ commit: 'addVoteOptions', rawError: true })
+  public async insertVoteOptions(vos: VoteOption[]) {
+    return vos;
+  }
+
   @Mutation
   public async addVoteOptions(vos: VoteOption[]) {
-    pipe(vos, array.map(vo => async () => { Vue.set(this.voteOptions, vo.id, vo) }),
+    pipe(vos, array.map(vo => async () => { Vue.set(this.voteOptions, vo.id, vo); }),
         array.array.sequence(task.task))();
   }
 
   @Mutation
   public async addVoteOption(vo: VoteOption) {
-    Vue.set(this.voteOptions, vo.id, vo) 
+    Vue.set(this.voteOptions, vo.id, vo);
   }
 
   @Mutation
