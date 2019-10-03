@@ -2,6 +2,7 @@
   <v-card>
     <v-list-item three-line>
       <v-list-item-content class="align-self-start">
+        <v-list-item-title class="title" v-text="action.name"></v-list-item-title>
         <v-chip-group multiple>
           <v-chip> {{ action.type }}</v-chip>
           <v-chip> {{ action.location }}</v-chip>

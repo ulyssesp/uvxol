@@ -1,5 +1,5 @@
 <template>
-    <v-container fluid grid-list-lg>
+    <v-container fluid grid-list-lg class="">
       <v-row>
         <h4> Status: {{ err }} </h4>
       </v-row>
@@ -10,15 +10,15 @@
         {{ chosenVoteOptions }}
       </v-row>
       <v-row>
-        <v-col cols="2">
+        <v-col cols="3">
           <v-row>
             <v-subheader> Events </v-subheader>
           </v-row>
-          <v-row v-for="(event, i) in events" :key="i" class="mb-2 pa-1">
+          <v-row v-for="(event, i) in events" :key="i" class="ma-3 pa-1">
             <Event v-bind:event="event"></Event>
           </v-row>
         </v-col>
-        <v-col v-for="(location, i) in actionLogByLocation" :key="i" cols="3">
+        <v-col v-for="(location, i) in actionLogByLocation" :key="i" cols="2">
           <v-row>
             <v-subheader> {{ location[0] }} </v-subheader>
           </v-row>
