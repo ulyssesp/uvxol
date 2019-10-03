@@ -9,13 +9,13 @@
       <v-row>
         {{ chosenVoteOptions }}
       </v-row>
-      <v-row>
-        <v-col cols="3">
+      <v-row class="flex-nowrap">
+        <v-col cols="2">
           <v-row>
             <v-subheader> Events </v-subheader>
           </v-row>
-          <v-row v-for="(event, i) in events" :key="i" class="ma-3 pa-1">
-            <Event v-bind:event="event"></Event>
+          <v-row v-for="(event, i) in events" :key="i" class="mb-3 ms-1">
+            <Event v-bind:event="event" class="pa-1 flex-grow-1"></Event>
           </v-row>
         </v-col>
         <v-col v-for="(location, i) in actionLogByLocation" :key="i" cols="2">
@@ -25,9 +25,9 @@
           <v-row
              v-for="(action, i) in location[1]"
              :key="i"
-             class="mb-2 pa-1"
+             class="mb-3 ms-1"
             >
-            <ActionC v-bind:action="action"></ActionC>
+            <ActionC v-bind:action="action" class="mb-3 ms-2 pa-1 flex-grow-1"></ActionC>
           </v-row>
         </v-col>
       </v-row>
