@@ -1,11 +1,12 @@
 import Vue from 'vue';
 import { Module, VuexModule, Action, Mutation, MutationAction, getModule } from 'vuex-module-decorators';
 import { ActionEvent, EventId, VoteOption, VoteOptionId, ActionId } from '@/types';
+import * as ty from '@/types';
 import store from '@/store';
 import eventStore from './events';
 import voteOptionStore from './voteoptions';
 import { task, array, set, eq, option, semigroup, ord, nonEmptyArray, tuple } from 'fp-ts';
-import { flow, constVoid, constant, identity } from 'fp-ts/lib/function';
+import { flow, constVoid, constant, identity, flip } from 'fp-ts/lib/function';
 import { pipe } from 'fp-ts/lib/pipeable';
 import { logid, logval } from '../../utils/fp-utils';
 import * as idt from 'fp-ts/lib/Identity';
@@ -13,6 +14,12 @@ import * as cnst from 'fp-ts/lib/Const';
 import * as trv from 'fp-ts/lib/Traversable';
 import * as fld from 'fp-ts/lib/Foldable';
 import * as ap from 'fp-ts/lib/Applicative';
+import * as tup from 'fp-ts/lib/Tuple';
+import * as m from 'fp-ts/lib/Monoid';
+import * as mo from 'fp-ts/lib/Monad';
+import * as f from 'fp-ts/lib/Functor';
+import * as ot from 'fp-ts/lib/OptionT';
+import * as chn from 'fp-ts/lib/Chain';
 import { getFilterableComposition } from 'fp-ts/lib/Filterable';
 
 const eqActionEvent = eq.eq.contramap(eq.eqNumber, (e: ActionEvent) => e.id);
@@ -23,7 +30,17 @@ const tseq: <A>(ta: task.Task<A>[]) => task.Task<void> =
 const tparallel: <A>(ta: task.Task<A>[]) => task.Task<void> = 
   ta => fld.traverse_(task.task, array.array)(ta, task.map(constVoid))
 
-const taskFilter = getFilterableComposition(task.task, array.array);
+{/* const taskOptionF = f.getFunctorComposition(task.task, option.option); */}
+{/* const taskOptionC = f.getFunctorComposition(task.task, option.option); */}
+declare module 'fp-ts/lib/HKT' {
+  interface URItoKind<A> {
+    TaskOption: task.Task<option.Option<A>>
+  }
+} 
+const taskOption: mo.Monad1<'TaskOption'> = {
+  URI: 'TaskOption',
+  ...ot.getOptionM(task.task)
+}
 
 @Module({ dynamic: true, name: 'runStore', store })
 class Run extends VuexModule {
@@ -47,39 +64,37 @@ class Run extends VuexModule {
       )),
       option.map(e => [
           () => eventStore.getEventsForTrigger(e.id).then(constVoid),
-          tseq([
-            pipe(task.fromIO(() => { self.runList.push(e); }), task.delay(e.delay || 0)),
-            pipe([
-                pipe(
-                  e.actions,
-                  array.map(a => task.fromIO(() => option.fromNullable(self.pendingVoteOptions[a.id]))),
-                  seqT,
-                  ts => taskFilter.filterMap(ts, identity),
-                  ts => taskFilter.filterMap(ts, flow(
+          pipe(task.fromIO(() => { self.runList.push(e); }), task.delay(e.delay || 0),
+            task.chain(() =>
+              pipe(
+                e.actions,
+                array.map<ty.Action, task.Task<option.Option<void>>>(a => pipe(
+                  a.id, 
+                  task.of,
+                  id => task.ap(id)(task.of(id => option.fromNullable(self.pendingVoteOptions[id]))),
+                  ta => taskOption.chain(ta, flow(
                     array.sort(ord.ordNumber),
                     array.chop(as => {
                       const { init, rest } = array.spanLeft((a: number) => eq.eqNumber.equals(a, as[0]))(as)
                       return [init, rest];
                     }),
-                    logid(array.array),
                     array.map(arr => [arr[0], arr.length] as [number, number]),
                     nonEmptyArray.fromArray,
                     option.map(nonEmptyArray.max(ord.ord.contramap(ord.ordNumber, e => e[1]))),
                     option.map(tuple.fst),
-                    option.map(r => task.fromIO(() => { Vue.set(self.chosenVoteOptions, r, r) })),
+                    task.of
                   )),
-                  task.chain(tparallel),
-                ),
-                pipe(
-                  task.fromIO(() => option.fromNullable(eventStore.eventsByTrigger[e.id])),
-                  task.map(option.getOrElse(constant(set.empty as Set<number>))),
-                  task.map(set.filterMap(eqActionEvent)(id => option.fromNullable(eventStore.events[id]))),
-                  task.chain(flow(Run.runEvents(self), tseq)))
-              ],
-              tseq,
-              task.delay(e.duration || 0)
-            ),
-          ]),
+                  t => taskOption.ap(taskOption.of(r => { Vue.set(self.chosenVoteOptions, r, r); }), t),
+                )),
+                tseq,
+                task.chain(() =>
+                  pipe(
+                    task.fromIO(() => option.fromNullable(eventStore.eventsByTrigger[e.id])),
+                    task.map(option.getOrElse(constant(set.empty as Set<number>))),
+                    task.map(set.filterMap(eqActionEvent)(id => option.fromNullable(eventStore.events[id]))),
+                    task.chain(flow(Run.runEvents(self), tseq)))),
+              task.delay(e.duration || 0))
+            )),
       ]),
       option.map(tparallel),
     )

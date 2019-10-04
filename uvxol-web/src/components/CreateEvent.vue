@@ -8,13 +8,13 @@
       <v-container>
         <v-row>
           <v-col cols="4">
-            <v-text-field v-model="name" label="Name"></v-text-field>
+            <v-text-field v-model="editedEvent.name" label="Name"></v-text-field>
           </v-col>
           <v-col cols="4">
-            <v-text-field v-model="duration" label="Duration"></v-text-field>
+            <v-text-field v-model="editedEvent.duration" label="Duration"></v-text-field>
           </v-col>
           <v-col cols="4">
-            <v-text-field v-model="delay" label="Delay"></v-text-field>
+            <v-text-field v-model="editedEvent.delay" label="Delay"></v-text-field>
           </v-col>
         </v-row>
         <v-row>
@@ -22,7 +22,7 @@
             <v-select
                 :items="events"
                 item-text="name"
-                v-model="triggers"
+                v-model="editedEvent.triggers"
                 label="Triggers"
                 item-value="id"
                 segmented overflow editable multiple
@@ -33,7 +33,7 @@
                 :items="actions"
                 item-text="name"
                 label="Actions"
-                v-model="actionChoices"
+                v-model="editedEvent.actions"
                 item-value="id"
                 segmented overflow editable multiple
             ></v-select>
@@ -45,7 +45,7 @@
                 :items="voteOptions"
                 item-text="name"
                 label="Depends on"
-                v-model="dependencies"
+                v-model="editedEvent.dependencies"
                 item-value="id"
                 segmented overflow editable multiple
             ></v-select>
@@ -55,7 +55,7 @@
                 :items="voteOptions"
                 item-text="name"
                 label="Prevented by"
-                v-model="preventions"
+                v-model="editedEvent.preventions"
                 item-value="id"
                 segmented overflow editable multiple
             ></v-select>
@@ -67,18 +67,37 @@
       <v-btn color="success" text v-on:click="submit">save</v-btn>
       <v-btn color="success" text v-on:click="close">cancel</v-btn>
     </v-card-actions>
-    </v-row>
   </v-card>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { ActionEvent, Action, VoteOption } from '../types';
 import { lookup } from 'dns';
 import { array } from 'fp-ts';
 import Events from '../store/modules/events'
 import { getModule } from 'vuex-module-decorators';
 import eventStore from '../store/modules/events';
+
+const defaultEvent = { 
+    name: '', 
+    duration: 4000, 
+    delay: 0, 
+    actions: [] as number[],
+    triggers: [] as number[],
+    dependencies: [] as number[],
+    preventions: [] as number[]
+  };
+
+const mapEvent = (val: ActionEvent | undefined) => val ? { 
+      name: val.name,
+      duration: val.duration,
+      delay: val.delay || 0,
+      triggers: val.triggers,
+      actions: val.actions.map(d => d.id),  
+      dependencies: val.dependencies.map(d => d.id),  
+      preventions: val.preventions.map(p => p.id)
+    } : defaultEvent
 
 @Component({
     components: {}
@@ -87,33 +106,21 @@ export default class CreateAction extends Vue {
   @Prop({ required: true }) readonly actions!: Action[];
   @Prop({ required: true }) readonly events!: ActionEvent[];
   @Prop({ required: true }) readonly voteOptions!: VoteOption[];
-  @Prop({ default: '' }) readonly updateName!: string;
-  @Prop({ default: '4000' }) readonly updateDuration!: string;
-  @Prop({ default: '0' }) readonly updateDelay!: string;
-  //@Prop({ default: [] }) readonly updateActionChoices: number[];
-  //@Prop({ default: [] }) readonly updateTriggers: number[];
-  //@Prop({ default: [] }) readonly updateDependencies: number[];
-  //@Prop({ default: [] }) readonly updatePreventions: number[];
+  @Prop() readonly updateId!: any | undefined;
+  @Prop() readonly updateEvent!: any | undefined;
   err = "";
   loading = false;
-  name = this.updateName;
-  duration = this.updateDelay;
-  delay = "0";
-  actionChoices = []
-  triggers: number[] = []
-  dependencies: number[] = []
-  preventions: number[] = []
+  editedEvent = mapEvent(this.updateEvent);
+  editedId = this.updateId;
+  @Watch('updateEvent')
+  onEditEvent(val: ActionEvent) {
+    this.editedEvent = mapEvent(val);
+  }
   submit() {
     this.loading = true;
-    eventStore.createEvent({ 
-      name: this.name, 
-      triggers: this.triggers, 
-      duration: parseInt(this.duration), 
-      delay: parseInt(this.delay), 
-      actions: this.actionChoices,
-      preventions: this.preventions,
-      dependencies: this.dependencies
-    }).then(() => this.err = "success")
+    eventStore.createOrUpdateEvent(
+      Object.assign({ id: this.updateId }, this.editedEvent))
+      .then(() => this.err = "success")
       .then(() => this.loading = false)
       .then(() => this.$emit('data-change'))
       .then(() => this.close())
@@ -127,13 +134,8 @@ export default class CreateAction extends Vue {
         })
   }
   close() {
-    this.name = "";
-    this.duration = "4000";
-    this.delay = "0";
-    this.actionChoices = [];
-    this.triggers = [];
-    this.dependencies = [];
-    this.preventions = [];
+    this.editedId = undefined;
+    this.editedEvent = defaultEvent;
     this.$emit('done')
   }
 }

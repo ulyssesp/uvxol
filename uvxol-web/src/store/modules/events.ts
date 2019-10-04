@@ -49,11 +49,14 @@ class Events extends VuexModule {
   }
 
   @Action({ commit: 'addEventAction' , rawError: true })
-  public async createEvent(a: { 
-    name: string, triggers: number[], 
-    duration: number, delay: number, 
-    actions: number[], dependencies: number[], preventions: number[]}) {
-    return api.postEvent(a.name, a.triggers, a.duration, a.delay, a.actions, a.dependencies, a.preventions);
+  public async createOrUpdateEvent(a: { 
+      id: number | undefined, name: string,
+      triggers: number[], duration: number,
+      delay: number, actions: number[],
+      dependencies: number[], preventions: number[]}) {
+    return a.id === undefined ?
+      api.postEvent(a.name, a.triggers, a.duration, a.delay, a.actions, a.dependencies, a.preventions) :
+      api.putEvent(a.id, a.name, a.triggers, a.duration, a.delay, a.actions, a.dependencies, a.preventions);
   }
 
   @Action({ commit: 'removeEvent' , rawError: true })
@@ -93,7 +96,7 @@ class Events extends VuexModule {
 
   @Mutation
   public async addEventAction(e: ActionEvent) {
-    await Events.addEvent(this)(e);
+    await Events.addEvent(this)(Object.assign({ dependencies: [], preventions: []}, e));
   }
 
   @Mutation

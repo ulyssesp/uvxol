@@ -14,6 +14,7 @@
                 <v-text-field
                   v-model="search"
                   label="Search"
+                  append-icon="search"
                   single-line
                   hide-details
                 ></v-text-field>
@@ -23,7 +24,15 @@
                   <template v-slot:activator="{ on }">
                           <v-btn color="primary" dark class="mb-2" v-on="on">New Item</v-btn>
                   </template>
-                  <CreateEvent :actions="actions" :events="events" :voteOptions="voteOptions" v-on:data-change="refresh" v-on:done="closeDialog"></CreateEvent>
+                  <CreateEvent 
+                    :actions="actions" 
+                    :events="events" 
+                    :voteOptions="voteOptions" 
+                    :updateEvent="editingEvent"
+                    :updateId="editingId"
+                    v-on:data-change="refresh" 
+                    v-on:done="closeDialog" 
+                    ></CreateEvent>
                 </v-dialog>
               </v-col>
             </v-row>
@@ -37,6 +46,9 @@
             :search="search"
         >
             <template v-slot:item.action="{ item }">
+                <v-icon small @click="editEvent(item.id)">
+                    edit
+                </v-icon>
                 <v-icon small @click="deleteEvent(item.id)">
                     delete
                 </v-icon>
@@ -68,6 +80,8 @@ export default class EventsList extends Vue {
     private err = "";
     dialog=false;
     search = '';
+    editingId: number | undefined = undefined;
+    editingEvent: ActionEvent | undefined = undefined;
     get flatevents() {
       return array.map((e: ActionEvent) => ({
           ...e, 
@@ -92,11 +106,17 @@ export default class EventsList extends Vue {
     ]
     closeDialog() {
       this.dialog = false;
+      this.editingEvent = undefined;
     }
     deleteEvent(id: number) {
         eventStore.deleteEvent(id)
             .then(() => this.$emit('data-change'))
             .catch(err => this.err = err);
+    }
+    editEvent(id: number) {
+      this.editingId = id;
+      this.editingEvent = eventStore.events[id];
+      this.dialog = true;
     }
 }
 </script>

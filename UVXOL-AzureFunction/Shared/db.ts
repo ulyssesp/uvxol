@@ -55,7 +55,6 @@ export const getEvent: (id: EventId) => Promise<any> = async function(id) {
 
 export const getEvents: () => Promise<any> = async function() {
     return connect.then(() => 
-
         pool.query`select 
             EventId as id, Name as name, Delay as delay, Duration as duration, 
             (select ET.TriggerId as id from EventTriggers as ET
@@ -434,12 +433,12 @@ export const updateEvent = async function(
       .input('duration', sql.Int, duration)
       .input('delay', sql.Int, delay)
       .input('name', sql.Text, name)
-      .query`update Events set Duration = @duration, Delay = @delay, Name = @name where Id = @id`)
+      .query`update Events set Duration = @duration, Delay = @delay, Name = @name where EventId = @id`)
     .then(() => deleteEventVoteOptionsByEventId(id))
     .then(() => deleteEventTriggersByEventId(id))
     .then(() => deleteEventActionsByEventId(id))
-    .then(eventResult => {
-      const eventId = eventResult.recordset[0].EventId
+    .then(() => {
+      const eventId = id;
 
       const eventTriggers = new sql.Table("EventTriggers")
       eventTriggers.columns.add('EventId', sql.Int);

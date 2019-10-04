@@ -28,13 +28,19 @@ export const mapEvent: (e: any) => ActionEvent = (e: any) => Object.assign(e, {
   preventions: array.map(mapVoteOption)(e.preventions || []),
 });
 
-
 export const postEvent: (name: string, triggers: number[],
                          duration: number, delay: number,
                          actions: number[], dependencies: number[], preventions: number[]) =>
     Promise<ActionEvent> =
     (name, triggers, duration, delay, actions, dependencies, preventions) =>
         rp.post({url: eventsuri, json: true, body: {name, triggers, duration, delay, actions, dependencies, preventions}}).promise();
+
+export const putEvent: (id: number, name: string, triggers: number[],
+                         duration: number, delay: number,
+                         actions: number[], dependencies: number[], preventions: number[]) =>
+    Promise<ActionEvent> =
+    (id, name, triggers, duration, delay, actions, dependencies, preventions) =>
+        rp.put({url: eventsuri, json: true, body: { id, name, triggers, duration, delay, actions, dependencies, preventions }}).promise();
 
 export const deleteEvent: (id: number) => Promise<any> =
     (id) => rp({url: eventsuri, qs: { id }, json: true, resolveWithFullResponse: true, method: 'DELETE'}).promise();

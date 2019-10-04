@@ -14,7 +14,7 @@
           <v-row>
             <v-subheader> Events </v-subheader>
           </v-row>
-          <v-row v-for="(event, i) in events" :key="i" class="mb-3 ms-1">
+          <v-row v-for="(event, i) in events" :key="i" class="mb-3" cols = "2">
             <Event v-bind:event="event" class="pa-1 flex-grow-1"></Event>
           </v-row>
         </v-col>
@@ -25,9 +25,9 @@
           <v-row
              v-for="(action, i) in location[1]"
              :key="i"
-             class="mb-3 ms-1"
+             class="mb-3"
             >
-            <ActionC v-bind:action="action" class="mb-3 ms-2 pa-1 flex-grow-1"></ActionC>
+            <ActionC v-bind:action="action" class="ms-2 pa-1 flex-grow-1"></ActionC>
           </v-row>
         </v-col>
       </v-row>

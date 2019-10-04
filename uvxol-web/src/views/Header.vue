@@ -3,12 +3,16 @@
     <v-toolbar-title class="headline text-uppercase">
       <span>UVXOL Management</span>
     </v-toolbar-title>
+    <template v-slot:extension>
     <v-toolbar-items>
-      <router-link to="/actions"><v-btn text>Actions</v-btn></router-link>
-      <router-link to="/events"><v-btn text>Events</v-btn></router-link>
-      <router-link to="/voteoptions"><v-btn text>Vote Options</v-btn></router-link>
-      <router-link to="/runner"><v-btn text>Runner</v-btn></router-link>
+      <v-tabs align-with-title background-color="transparent">
+        <v-tab to="/actions">Actions</v-tab>
+        <v-tab to="/events">Events</v-tab>
+        <v-tab to="/voteoptions">Vote Options</v-tab>
+        <v-tab to="/runner">Runner</v-tab>
+      </v-tabs>
     </v-toolbar-items>
+    </template>
     <v-spacer></v-spacer>
   </v-app-bar>
 </template>
