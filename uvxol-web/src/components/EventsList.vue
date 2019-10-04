@@ -3,11 +3,38 @@
         <v-row>
             <h4> Status: {{ err }} </h4>
         </v-row>
+        <v-card-title>
+          <v-container>
+            <v-row>
+              <v-col class="flex-grow-0">
+              Events
+              </v-col>
+              <v-col class="flex-grow-1"></v-col>
+              <v-col class="flex-grow-1">
+                <v-text-field
+                  v-model="search"
+                  label="Search"
+                  single-line
+                  hide-details
+                ></v-text-field>
+              </v-col>
+              <v-col class="flex-grow-0">
+                <v-dialog v-model="dialog">
+                  <template v-slot:activator="{ on }">
+                          <v-btn color="primary" dark class="mb-2" v-on="on">New Item</v-btn>
+                  </template>
+                  <CreateEvent :actions="actions" :events="events" :voteOptions="voteOptions" v-on:data-change="refresh" v-on:done="closeDialog"></CreateEvent>
+                </v-dialog>
+              </v-col>
+            </v-row>
+          </v-container>
+        </v-card-title>
         <v-data-table
             :headers="headers"
             :items="flatevents"
             :items-per-page="10"
             class="elevation-1"
+            :search="search"
         >
             <template v-slot:item.action="{ item }">
                 <v-icon small @click="deleteEvent(item.id)">
@@ -27,13 +54,20 @@ import { pipe } from 'fp-ts/lib/pipeable';
 import Events from '../store/modules/events'
 import { getModule } from 'vuex-module-decorators';
 import eventStore from '../store/modules/events';
+import CreateEvent from './CreateEvent.vue';
 
 
-@Component
+@Component({
+  components: { CreateEvent },
+  
+})
 export default class EventsList extends Vue {
-    @Prop({required:true}) events!: ActionEvent[];
-    @Prop({required:true}) actions!: Action[];
+    @Prop({required:true}) readonly events!: ActionEvent[];
+    @Prop({required:true}) readonly actions!: Action[];
+    @Prop({required:true}) readonly voteOptions!: VoteOption[];
     private err = "";
+    dialog=false;
+    search = '';
     get flatevents() {
       return array.map((e: ActionEvent) => ({
           ...e, 
@@ -56,6 +90,9 @@ export default class EventsList extends Vue {
         { text: "triggers", value: "triggers" }, 
         { text: "edit", value: "action" }, 
     ]
+    closeDialog() {
+      this.dialog = false;
+    }
     deleteEvent(id: number) {
         eventStore.deleteEvent(id)
             .then(() => this.$emit('data-change'))

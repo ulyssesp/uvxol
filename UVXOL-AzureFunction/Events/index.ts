@@ -31,6 +31,19 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         )
         .then(res => res.recordset[0][0])
         .catch(err => { context.log(err); return { err }});
+    } else if (req.method === "PUT") {
+        body = await db.updateEvent(
+            req.body.id,
+            req.body.triggers || [], 
+            req.body.duration, 
+            req.body.name,
+            req.body.actions || [], 
+            req.body.dependencies || [],
+            req.body.preventions || [],
+            req.body.delay
+        )
+        .then(res => res.recordset[0][0])
+        .catch(err => { context.log(err); return { err }});
     } else if (req.method === "DELETE") {
         body = await db.deleteEvent(id)
             .then(() => ({ message: "success" }))

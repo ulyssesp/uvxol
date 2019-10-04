@@ -18,11 +18,13 @@ const dbConfig = Object.assign(resolve(process.env['sqldb_connection'], 'tedious
 const pool = new sql.ConnectionPool(dbConfig)
 
 
-const connect = new Promise(function(resolve, reject) {
+const connect: Promise<any> = new Promise(function(resolve, reject) {
     pool.connect()
         .then(resolve)
         .catch(reject)
 });
+
+const connectRequest = () => connect.then(pool.request());
 
 export const getEvent: (id: EventId) => Promise<any> = async function(id) {
     return connect.then(() => 
@@ -214,6 +216,7 @@ export const getVoteOptions = () =>
 //             for json auto`
 //     );
 
+
 export const insertEvent = async function(
     triggers: EventId[], 
     duration: number, 
@@ -345,28 +348,36 @@ export const insertVoteOption = (name: string, text: string, dependencies: numbe
                     .then(() => ps.unprepare())
                     .catch(() => ps.unprepare())
                     .then(() => getVoteOption(voteOptionId))
-            })
+            });
+
+const deleteEventActionsByEventId = async(id: number) => 
+  connectRequest().then(c => c.query`delete from EventActions where EventId = ${id}`);
+
+const deleteEventActionsByActionId = async(id: number) =>
+  connectRequest().then(c => c.query`delete from EventActions where ActionId = ${id}`);
+
+const deleteEventTriggersByEventId = async(id: number) =>
+  connectRequest().then(c => c.query`delete from EventTriggers where EventId = ${id}`);
+
+const deleteEventTriggersByTriggerId = async(id: number) =>
+  connectRequest().then(c => c.query`delete from EventTriggers where TriggerId = ${id}`);
+
+const deleteEventVoteOptionsByEventId = async(id: number) =>
+  connectRequest().then(c => c.query`delete from EventVoteOptions where EventId = ${id}`);
 
 export const deleteEvent = async (id:number) => 
-    id === null || id <= 0 ? 
-        { err: "invalid id" } :
-        connect
-            .then(() => 
-                pool.request()
-                    .input('id', sql.Int, id)
-                    .query`delete from EventActions where EventId = @id`)
-            .then(() => 
-                pool.request()
-                    .input('id', sql.Int, id)
-                    .query`delete from EventTriggers where (EventId = @id or TriggerId = @id)`)
-            .then(() => 
-                pool.request()
-                    .input('id', sql.Int, id)
-                    .query`delete from EventVoteOptions where (EventId = @id)`)
-            .then(() => 
-                pool.request()
-                    .input('id', sql.Int, id)
-                    .query`delete from Events where EventId = @id`)
+  id === null || id <= 0 ? 
+    { err: "invalid id" } :
+    connect
+      .then(() => deleteEventActionsByEventId(id))
+      .then(() => deleteEventTriggersByEventId(id))
+      .then(() => deleteEventTriggersByTriggerId(id))
+      .then(() => deleteEventVoteOptionsByEventId(id))
+      .then(() => 
+          pool.request()
+              .input('id', sql.Int, id)
+              .query`delete from Events where EventId = @id`)
+
 
 export const deleteAction = async (id:number) => 
     id === null || id <= 0 ? 
@@ -405,3 +416,67 @@ export const deleteVoteOption = async (id: number) =>
                 pool.request()
                     .input('id', sql.Int, id)
                     .query`delete from VoteOptions where VoteOptionId = @id`)
+
+
+
+export const updateEvent = async function(
+  id: EventId,
+  triggers: EventId[], 
+  duration: number, 
+  name: string,
+  actions: ActionId[],
+  dependencies: VoteOptionId[],
+  preventions: VoteOptionId[],
+  delay?: number) {
+  return connect
+    .then(() => pool.request()
+      .input('id', sql.Int, id)
+      .input('duration', sql.Int, duration)
+      .input('delay', sql.Int, delay)
+      .input('name', sql.Text, name)
+      .query`update Events set Duration = @duration, Delay = @delay, Name = @name where Id = @id`)
+    .then(() => deleteEventVoteOptionsByEventId(id))
+    .then(() => deleteEventTriggersByEventId(id))
+    .then(() => deleteEventActionsByEventId(id))
+    .then(eventResult => {
+      const eventId = eventResult.recordset[0].EventId
+
+      const eventTriggers = new sql.Table("EventTriggers")
+      eventTriggers.columns.add('EventId', sql.Int);
+      eventTriggers.columns.add('TriggerId', sql.Int);
+      triggers.forEach(trigger => {
+          eventTriggers.rows.add(eventId, trigger)
+      });
+
+      const eventActions = new sql.Table("EventActions");
+      eventActions.columns.add('EventId', sql.Int);
+      eventActions.columns.add('ActionId', sql.Int);
+      actions.forEach(action => {
+          eventActions.rows.add(eventId, action)
+      });
+
+      const ps = new sql.PreparedStatement(pool)
+      ps.input('eventId', sql.Int)
+      ps.input('voteOptionId', sql.Int)
+      ps.input('relationship', sql.Int)
+      var psinputs = []
+      dependencies.forEach(dep => {
+          psinputs.push({eventId, voteOptionId: dep, relationship: 0})
+      });
+
+      preventions.forEach(prev => {
+          psinputs.push({eventId, voteOptionId: prev, relationship: 1})
+      });
+
+      return Promise.all([
+          triggers.length > 0 ? pool.request().bulk(eventTriggers) : Promise.resolve(), 
+          actions.length > 0 ? pool.request().bulk(eventActions) : Promise.resolve() , 
+          ps.prepare(`insert into EventVoteOptions 
+                      (EventId, VoteOptionId, Relationship) values
+                      (@eventId, @voteOptionId, @relationship)`)
+            .then(() => array.reduce(Promise.resolve(), (p, input) => p.then(() => ps.execute(input)))(psinputs))
+            .then(ps.unprepare())
+            .catch(ps.unprepare())
+        ]).then(() => getEvent(eventId));
+    })
+}

@@ -1,10 +1,10 @@
 <template>
     <v-container>
-        <v-row>
-            <v-col>
-                <CreateEvent :actions="actions" :events="events" :voteOptions="voteOptions" v-on:data-change="refresh"></CreateEvent>
-            </v-col>
-        </v-row>
+        <!-- <v-row> -->
+        <!--     <v-col> -->
+        <!--         <CreateEvent :actions="actions" :events="events" :voteOptions="voteOptions" v-on:data-change="refresh"></CreateEvent> -->
+        <!--     </v-col> -->
+        <!-- </v-row> -->
         <v-row>
             <v-col>
                 <EventsList v-bind:actions="actions" v-bind:events="events" :voteOptions="voteOptions" v-bind:err="err" v-on:data-change="refresh"></EventsList>
