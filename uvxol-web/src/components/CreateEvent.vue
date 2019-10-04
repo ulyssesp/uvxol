@@ -116,6 +116,10 @@ export default class CreateAction extends Vue {
   onEditEvent(val: ActionEvent) {
     this.editedEvent = mapEvent(val);
   }
+  @Watch('updateId')
+  onEditId(val: number) {
+    this.editedId = val;
+  }
   submit() {
     this.loading = true;
     eventStore.createOrUpdateEvent(
