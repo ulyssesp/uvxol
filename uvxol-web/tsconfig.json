@@ -15,9 +15,13 @@
       "webpack-env",
       "vuetify"
     ],
+    "typeRoots": [
+      "node_modules/vue-socket.io/index.d.ts"
+    ],
     "paths": {
       "@/*": [
-        "src/*"
+        "src/*",
+        "server/*"
       ]
     },
     "lib": [
