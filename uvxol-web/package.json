@@ -11,6 +11,7 @@
     "deploy": "npm run build && az storage blob upload-batch -s dist -d '$web' --account-name uvxolweb"
   },
   "dependencies": {
+    "@types/ws": "^6.0.4",
     "core-js": "^2.6.5",
     "express": "^4.17.1",
     "fp-ts": "^2.0.5",

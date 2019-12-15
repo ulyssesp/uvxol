@@ -4,6 +4,7 @@ import * as ioref from 'fp-ts/lib/IORef';
 import * as t from 'fp-ts/lib/Task';
 import * as te from 'fp-ts/lib/TaskEither';
 import * as ldjs from 'lambda-designer-js';
+import * as WebSocket from 'ws';
 import Socket from './socket';
 import {flow} from 'fp-ts/lib/function';
 import {pipe} from 'fp-ts/lib/pipeable';
@@ -16,6 +17,23 @@ app.set('port', port);
 app.use(express.static('dist'));
 
 const server = http.createServer(app);
+
+const wsQueue = () => {
+  const messageQueue: string[] = [];
+  (new WebSocket.Server({ server })).on('connection', async (ws) => {
+    ws.on('message', (ws: WebSocket, message: string) => {
+      messageQueue.push(message);
+    })
+  });
+
+  const getTask: t.Task<string> = 
+    pipe(
+      t.fromIO(() => messageQueue.length > 0 ? messageQueue.pop() : undefined),
+      t.chain(a => a === undefined ? pipe(getTask, t.delay(30)) : t.of(a))
+    );
+
+  return getTask;
+}
 
 const update: (s: Socket) => (ns: ldjs.INode[]) => te.TaskEither<string, void> = s =>
   flow(
