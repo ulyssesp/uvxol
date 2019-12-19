@@ -54,23 +54,25 @@ class Run extends VuexModule {
     flow(
       option.fromNullable,
       option.chainFirst(e => pipe(
-        array.getMonoid<boolean>()
-          .concat(
+        array.getMonoid<boolean>().concat(
             array.map((d: VoteOption) => self.chosenVoteOptions[d.id] !== undefined)(e.dependencies),
             array.map((d: VoteOption) => self.chosenVoteOptions[d.id] === undefined)(e.preventions),
           ),
         ds => semigroup.fold(semigroup.semigroupAll)(true, ds),
         option.fromPredicate(identity),
       )),
-      option.map(e => [
+      // () => option.none
+      option.map(e => tparallel([
           () => eventStore.getEventsForTrigger(e.id).then(constVoid),
-          pipe(task.fromIO(() => { self.runList.push(e); }), task.delay(e.delay || 0),
-            task.chain(() =>
+          pipe(
+            task.fromIO(() => { self.runList.push(e); }), 
+            task.delay(e.delay || 0),
+            task.apSecond(
               pipe(
                 e.actions,
                 array.map<ty.Action, task.Task<option.Option<void>>>(a => pipe(
-                  a.id, 
-                  task.of,
+                  task.fromIO(() => self.socket.send(`["${a.location}", "${a.filePath === undefined ? "" : a.filePath}"]`)),
+                  task.map(() => a.id),
                   id => task.ap(id)(task.of(id => option.fromNullable(self.pendingVoteOptions[id]))),
                   ta => taskOption.chain(ta, flow(
                     array.sort(ord.ordNumber),
@@ -95,13 +97,14 @@ class Run extends VuexModule {
                     task.chain(flow(Run.runEvents(self), tseq)))),
               task.delay(e.duration || 0))
             )),
-      ]),
-      option.map(tparallel),
+      ])),
+      // option.map(tparallel),
     )
 
   public runList: ActionEvent[] = [];
   public chosenVoteOptions: { [id: number]: number } = {};
   public pendingVoteOptions: { [ id: number ] : Array<number> } = {};
+  private socket = new WebSocket("ws://localhost:8080");
 
   get log() {
     return this.runList;

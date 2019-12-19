@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve --silent",
-    "server": "ts-node-dev --respawn --project server/tsconfig.json server/serve.ts",
+    "server": "set NODE_OPTIONS=\"--trace-warnings\" && ts-node-dev --respawn --project server/tsconfig.json server/serve.ts",
     "build": "vue-cli-service build",
+    "watch": "vue-cli-service build --watch",
     "lint": "vue-cli-service lint",
     "auth": "az login",
     "deploy": "npm run build && az storage blob upload-batch -s dist -d '$web' --account-name uvxolweb"
