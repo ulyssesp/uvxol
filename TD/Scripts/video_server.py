@@ -31,6 +31,7 @@ def onHTTPRequest(webServerDAT, request, response):
   return response
 
 def onWebSocketOpen(webServerDAT, client):
+  print(client)
 	return
 
 def onWebSocketReceiveText(webServerDAT, client, data):

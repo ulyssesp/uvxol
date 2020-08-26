@@ -8,15 +8,15 @@ import VueSocketIO from 'vue-socket.io';
 Vue.config.productionTip = false;
 Vue.config.silent = true;
 
-Vue.use(new VueSocketIO({
-  debug: true,
-  connection: "ws://localhost:8080",
-  vuex: {
-    store,
-    actionPrefix: "SOCKET_",
-    mutationPrefix: "SOCKET_"
-  },
-}));
+// Vue.use(new VueSocketIO({
+//   debug: true,
+//   connection: "ws://localhost:9980",
+//   vuex: {
+//     store,
+//     actionPrefix: "SOCKET_",
+//     mutationPrefix: "SOCKET_"
+//   },
+// }));
 
 new Vue({
   vuetify,

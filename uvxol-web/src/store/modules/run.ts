@@ -21,6 +21,10 @@ import * as f from 'fp-ts/lib/Functor';
 import * as ot from 'fp-ts/lib/OptionT';
 import * as chn from 'fp-ts/lib/Chain';
 import { getFilterableComposition } from 'fp-ts/lib/Filterable';
+import Socket from './socket';
+
+// TODO: Should probably move this somewhere
+const socket = new Socket();
 
 const eqActionEvent = eq.eq.contramap(eq.eqNumber, (e: ActionEvent) => e.id);
 const seqT = array.array.sequence(task.task);
@@ -138,15 +142,8 @@ class Run extends VuexModule {
     )
 
   static sendToTD: (self: Run, location: string, filePath: string | undefined) => void =
-    (self, location, filePath) => {
-      const params = new URLSearchParams();
-      params.set("location", location);
-      params.set("filePath", filePath || "");
-      return fetch("http://localhost:9980/?" + params.toString(), {
-        method: 'GET'
-      });
-    }
-
+    (self, location, filePath) =>
+      socket.send(JSON.stringify({ location, filePath }))
 
   // List of events that have run. Used for Debugging purposes.
   public runList: ActionEvent[] = [];
