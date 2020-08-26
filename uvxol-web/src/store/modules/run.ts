@@ -21,7 +21,6 @@ import * as f from 'fp-ts/lib/Functor';
 import * as ot from 'fp-ts/lib/OptionT';
 import * as chn from 'fp-ts/lib/Chain';
 import { getFilterableComposition } from 'fp-ts/lib/Filterable';
-import rp from 'request-promise-native';
 
 const eqActionEvent = eq.eq.contramap(eq.eqNumber, (e: ActionEvent) => e.id);
 const seqT = array.array.sequence(task.task);
@@ -92,7 +91,7 @@ class Run extends VuexModule {
             pipe(
               e.actions,
               array.map<ty.Action, task.Task<option.Option<void>>>(a => pipe(
-                // Send the location and filepath to the websocket
+                // Send the location and filepath to the TD server
                 task.fromIO(() => Run.sendToTD(self, a.location, a.filePath)),
                 // map the result to the action id
                 task.map(() => a.id),
@@ -139,22 +138,20 @@ class Run extends VuexModule {
     )
 
   static sendToTD: (self: Run, location: string, filePath: string | undefined) => void =
-    (self, location, filePath) =>
-      rp.get({
-        url: "http://localhost:9980",
-        qs: {
-          location: location,
-          filePath: filePath
-        }
+    (self, location, filePath) => {
+      const params = new URLSearchParams();
+      params.set("location", location);
+      params.set("filePath", filePath || "");
+      return fetch("http://localhost:9980/?" + params.toString(), {
+        method: 'GET'
       });
+    }
 
-  // self.socket.send(`["${action.location}", "${action.filePath === undefined ? "" : action.filePath}"]`))
 
   // List of events that have run. Used for Debugging purposes.
   public runList: ActionEvent[] = [];
   public chosenVoteOptions: { [id: number]: number } = {};
   public pendingVoteOptions: { [id: number]: Array<number> } = {};
-  private socket = new WebSocket("ws://localhost:8080");
 
   get log() {
     return this.runList;

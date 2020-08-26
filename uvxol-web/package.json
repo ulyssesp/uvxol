@@ -17,7 +17,6 @@
     "express": "^4.17.1",
     "fp-ts": "^2.0.5",
     "lambda-designer-js": "^1.0.19",
-    "request-promise-native": "^1.0.7",
     "vue": "^2.6.10",
     "vue-class-component": "^7.0.2",
     "vue-property-decorator": "^8.2.2",
