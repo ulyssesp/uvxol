@@ -2,7 +2,9 @@
   <v-card :loading="loading">
     <v-card-title>
       Create Event
-      <v-subtitle><div :v-bind:err="err"> {{ err }} </div></v-subtitle>
+      <v-subtitle>
+        <div :v-bind:err="err">{{ err }}</div>
+      </v-subtitle>
     </v-card-title>
     <v-card-text>
       <v-container>
@@ -19,46 +21,110 @@
         </v-row>
         <v-row>
           <v-col>
-            <v-select
-                :items="events"
-                item-text="name"
-                v-model="editedEvent.triggers"
-                label="Triggers"
-                item-value="id"
-                segmented overflow editable multiple
-            ></v-select>
+            <v-autocomplete
+              :items="events"
+              item-text="name"
+              v-model="editedEvent.triggers"
+              label="Triggers"
+              item-value="id"
+              multiple
+              dense
+              flat
+              chips
+              deletable-chips
+              :search-input.sync="triggersInput"
+              @change="triggersInput=''"
+            >
+              <template v-slot:selection="data">
+                <v-chip
+                  close
+                  @click:close="data.splice(index, 1)"
+                  @click="editedEvent.triggers.splice(data.index,1)"
+                >
+                  <span>{{ data.item.name }}</span>
+                </v-chip>
+              </template>
+            </v-autocomplete>
           </v-col>
           <v-col>
-            <v-select
-                :items="actions"
-                item-text="name"
-                label="Actions"
-                v-model="editedEvent.actions"
-                item-value="id"
-                segmented overflow editable multiple
-            ></v-select>
+            <v-autocomplete
+              :items="actions"
+              item-text="name"
+              label="Actions"
+              v-model="editedEvent.actions"
+              item-value="id"
+              multiple
+              dense
+              flat
+              chips
+              deletable-chips
+              :search-input.sync="actionsInput"
+              @change="actionsInput=''"
+            >
+              <template v-slot:selection="data">
+                <v-chip
+                  close
+                  @click:close="data.splice(index, 1)"
+                  @click="editedEvent.actions.splice(data.index,1)"
+                >
+                  <span>{{ data.item.name }}</span>
+                </v-chip>
+              </template>
+            </v-autocomplete>
           </v-col>
         </v-row>
         <v-row>
           <v-col>
-            <v-select
-                :items="voteOptions"
-                item-text="name"
-                label="Depends on"
-                v-model="editedEvent.dependencies"
-                item-value="id"
-                segmented overflow editable multiple
-            ></v-select>
+            <v-autocomplete
+              :items="voteOptions"
+              item-text="name"
+              label="Depends on"
+              v-model="editedEvent.dependencies"
+              item-value="id"
+              multiple
+              dense
+              flat
+              chips
+              deletable-chips
+              :search-input.sync="dependsInput"
+              @change="dependsInput=''"
+            >
+              <template v-slot:selection="data">
+                <v-chip
+                  close
+                  @click:close="data.splice(index, 1)"
+                  @click="editedEvent.dependencies.splice(data.index,1)"
+                >
+                  <span>{{ data.item.name }}</span>
+                </v-chip>
+              </template>
+            </v-autocomplete>
           </v-col>
           <v-col>
-            <v-select
-                :items="voteOptions"
-                item-text="name"
-                label="Prevented by"
-                v-model="editedEvent.preventions"
-                item-value="id"
-                segmented overflow editable multiple
-            ></v-select>
+            <v-autocomplete
+              :items="voteOptions"
+              item-text="name"
+              label="Prevented by"
+              v-model="editedEvent.preventions"
+              item-value="id"
+              multiple
+              dense
+              flat
+              chips
+              deletable-chips
+              :search-input.sync="preventsInput"
+              @change="preventsInput=''"
+            >
+              <template v-slot:selection="data">
+                <v-chip
+                  close
+                  @click:close="editedEvent.preventions.splice(data.index,1)"
+                  @click="editedEvent.preventions.splice(data.index,1)"
+                >
+                  <span>{{ data.item.name }}</span>
+                </v-chip>
+              </template>
+            </v-autocomplete>
           </v-col>
         </v-row>
       </v-container>
@@ -71,36 +137,39 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { ActionEvent, Action, VoteOption } from '../types';
-import { lookup } from 'dns';
-import { array } from 'fp-ts';
-import Events from '../store/modules/events'
-import { getModule } from 'vuex-module-decorators';
-import eventStore from '../store/modules/events';
+import { Component, Vue, Prop, Watch } from "vue-property-decorator";
+import { ActionEvent, Action, VoteOption } from "../types";
+import { lookup } from "dns";
+import { array } from "fp-ts";
+import Events from "../store/modules/events";
+import { getModule } from "vuex-module-decorators";
+import eventStore from "../store/modules/events";
 
-const defaultEvent = { 
-    name: '', 
-    duration: 4000, 
-    delay: 0, 
-    actions: [] as number[],
-    triggers: [] as number[],
-    dependencies: [] as number[],
-    preventions: [] as number[]
-  };
+const defaultEvent = {
+  name: "",
+  duration: 4000,
+  delay: 0,
+  actions: [] as number[],
+  triggers: [] as number[],
+  dependencies: [] as number[],
+  preventions: [] as number[],
+};
 
-const mapEvent = (val: ActionEvent | undefined) => val ? { 
-      name: val.name,
-      duration: val.duration,
-      delay: val.delay || 0,
-      triggers: val.triggers,
-      actions: val.actions.map(d => d.id),  
-      dependencies: val.dependencies.map(d => d.id),  
-      preventions: val.preventions.map(p => p.id)
-    } : defaultEvent
+const mapEvent = (val: ActionEvent | undefined) =>
+  val
+    ? {
+        name: val.name,
+        duration: val.duration,
+        delay: val.delay || 0,
+        triggers: val.triggers,
+        actions: val.actions.map((d) => d.id),
+        dependencies: val.dependencies.map((d) => d.id),
+        preventions: val.preventions.map((p) => p.id),
+      }
+    : defaultEvent;
 
 @Component({
-    components: {}
+  components: {},
 })
 export default class CreateAction extends Vue {
   @Prop({ required: true }) readonly actions!: Action[];
@@ -108,39 +177,44 @@ export default class CreateAction extends Vue {
   @Prop({ required: true }) readonly voteOptions!: VoteOption[];
   @Prop() readonly updateId!: any | undefined;
   @Prop() readonly updateEvent!: any | undefined;
+  triggersInput = "";
+  actionsInput = "";
+  dependsInput = "";
+  preventsInput = "";
   err = "";
   loading = false;
   editedEvent = mapEvent(this.updateEvent);
   editedId = this.updateId;
-  @Watch('updateEvent')
+  @Watch("updateEvent")
   onEditEvent(val: ActionEvent) {
     this.editedEvent = mapEvent(val);
   }
-  @Watch('updateId')
+  @Watch("updateId")
   onEditId(val: number) {
     this.editedId = val;
   }
   submit() {
     this.loading = true;
-    eventStore.createOrUpdateEvent(
-      Object.assign({ id: this.updateId }, this.editedEvent))
-      .then(() => this.err = "success")
-      .then(() => this.loading = false)
-      .then(() => this.$emit('data-change'))
+    eventStore
+      .createOrUpdateEvent(
+        Object.assign({ id: this.updateId }, this.editedEvent)
+      )
+      .then(() => (this.err = "success"))
+      .then(() => (this.loading = false))
+      .then(() => this.$emit("data-change"))
       .then(() => this.close())
-      .catch((err: any) => 
-        {
-          try {
-            this.err = err.error.err.originalError.info.message
-          } catch {
-            this.err = err
-          }
-        })
+      .catch((err: any) => {
+        try {
+          this.err = err.error.err.originalError.info.message;
+        } catch {
+          this.err = err;
+        }
+      });
   }
   close() {
     this.editedId = undefined;
     this.editedEvent = defaultEvent;
-    this.$emit('done')
+    this.$emit("done");
   }
 }
 </script>

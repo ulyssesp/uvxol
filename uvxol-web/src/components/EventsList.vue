@@ -6,7 +6,8 @@
     <v-card-title>
       <v-container>
         <v-row>
-          <v-col class="flex-grow-0">Events</v-col>
+          <v-col cols="1">Events</v-col>
+          <v-col class="flex-shrink-1"></v-col>
           <v-col class="flex-grow-1">
             <v-text-field
               v-model="search"
