@@ -1,29 +1,40 @@
-import * as request from 'request-promise-native';
-import { Action, ActionTypesMap, VoteOptionId, TypesActionMap } from '@/types';
+import { Action, ActionTypesMap, VoteOptionId, TypesActionMap, EditableAction, ServerType } from '@/types';
 import { array } from 'fp-ts';
 import { mapVoteOption } from './VoteOptions';
+import actions from '@/store/modules/actions';
 
 
 export const actionsuri = 'https://uvxol-httptrigger.azurewebsites.net/api/actions';
 
 export const getActions: () => Promise<Action[]> = () =>
-    request.get({url: actionsuri, json: true })
+    fetch(actionsuri)
+        .then(res => res.json())
         .then((as: any[][]) => as[0])
         .then(array.map(mapAction));
 
 export const mapAction = (a: any) => Object.assign(a, {
-            type: TypesActionMap[a.type],
-            voteOptions: array.map(mapVoteOption)(a.voteOptions || []),
-        });
+    type: TypesActionMap[a.type],
+    voteOptions: array.map(mapVoteOption)(a.voteOptions || []),
+});
 
 export const postAction:
-    (name: string, filePath: string, type: string, location: string, voteOptions: VoteOptionId[], text: string)
-        => Promise<any> = (name, filePath, type, location, voteOptions, text) =>
-            request.post({url: actionsuri, json: true, body: {
-              name, filePath, type: ActionTypesMap[type], location, voteOptions, text,
-            }}).promise();
+    (action: ServerType<EditableAction>)
+        => Promise<any> = action =>
+        fetch(actionsuri, {
+            method: 'POST', body: JSON.stringify(action)
+        });
+
+export const putAction:
+    (action: ServerType<Action>)
+        => Promise<any> = action =>
+        fetch(actionsuri, {
+            method: 'PUT', body: JSON.stringify(action)
+        })
+
 
 export const deleteAction: (id: number) => Promise<any> =
-    (id) =>
-        request.delete({url: actionsuri, qs: { id }}).promise();
-
+    (id) => {
+        const params = new URLSearchParams();
+        params.set("id", id.toString());
+        return fetch(actionsuri + "?" + params.toString(), { method: 'DELETE' })
+    }

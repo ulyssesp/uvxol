@@ -1,7 +1,7 @@
 import * as api from '../../api/Actions';
 import * as vmod from 'vuex-module-decorators';
-import { Action, VoteOptionId, TypesActionMap } from '@/types';
-import {array, task} from 'fp-ts';
+import { Action, VoteOptionId, TypesActionMap, EditableAction, ServerType, isServerAction } from '@/types';
+import { array, task } from 'fp-ts';
 import Vue from 'vue';
 import store from '@/store';
 import { pipe } from 'fp-ts/lib/pipeable';
@@ -15,9 +15,10 @@ class Actions extends vmod.VuexModule {
   }
 
   @vmod.Action({ commit: 'addAction', rawError: true })
-  public async createAction(a: {name: string, filePath: string, type: string,
-                            location: string, voteOptions: VoteOptionId[], text: string}) {
-    return api.postAction(a.name, a.filePath, a.type, a.location, a.voteOptions, a.text);
+  public async createOrUpdateAction(a: ServerType<Action> | ServerType<EditableAction>) {
+    return isServerAction(a) ?
+      api.putAction(a) :
+      api.postAction(a);
   }
 
   @vmod.Action({ commit: 'removeAction', rawError: true })
@@ -37,7 +38,7 @@ class Actions extends vmod.VuexModule {
 
   @vmod.Mutation
   public async addAction(a: Action) {
-    Vue.set(this.actionsDict, a.id, a) 
+    Vue.set(this.actionsDict, a.id, a)
   }
 
   @vmod.Mutation
