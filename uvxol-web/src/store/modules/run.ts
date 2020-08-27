@@ -92,8 +92,6 @@ class Run extends VuexModule {
         pipe(
           // Push the event into the run list
           task.fromIO(() => { self.runList.push(e); }),
-          // Wait out the delay
-          task.delay(e.delay || 0),
           // Only return the delay action (?)
           task.apSecond(
             pipe(
@@ -129,6 +127,8 @@ class Run extends VuexModule {
                 t => taskOption.ap(taskOption.of(r => { Vue.set(self.chosenVoteOptions, r, r); }), t),
               )),
               tseq,
+              // Wait out the delay
+              task.delay(e.delay || 0),
               task.chain(() =>
                 pipe(
                   // Grab the triggered events
@@ -138,9 +138,10 @@ class Run extends VuexModule {
                   // filter out any events we haven't fetched
                   task.map(set.filterMap(eqActionEvent)(id => option.fromNullable(eventStore.events[id]))),
                   // run the events in sequence
-                  task.chain(flow(Run.runEvents(self), tseq)))),
-              // Delay for duration
-              task.delay(e.duration || 0)
+                  task.chain(flow(Run.runEvents(self), tseq)),
+                  // Delay for duration
+                  task.delay(e.duration || 0)
+                )),
             ))),
       ])),
     )
