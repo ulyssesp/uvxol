@@ -9,6 +9,8 @@ type RequireId<T> =
     }[keyof T], undefined>;
 
 export type ServerType<T> = Omit<T, RequireId<T>> & { [K in RequireId<T>]: number[] | Extract<T[RequireId<T>], undefined> };
+export type ServerAction<T extends Action | EditableAction> =
+    Omit<ServerType<T>, "type"> & { type: number };
 
 export type ActionId = number;
 

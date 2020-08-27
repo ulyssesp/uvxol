@@ -21,14 +21,14 @@ export const postAction:
     (action: ServerType<EditableAction>)
         => Promise<any> = action =>
         fetch(actionsuri, {
-            method: 'POST', body: JSON.stringify(action)
+            method: 'POST', body: JSON.stringify(Object.assign(action, { type: ActionTypesMap[action.type] }))
         });
 
 export const putAction:
     (action: ServerType<Action>)
         => Promise<any> = action =>
         fetch(actionsuri, {
-            method: 'PUT', body: JSON.stringify(action)
+            method: 'PUT', body: JSON.stringify(Object.assign(action, { type: ActionTypesMap[action.type] }))
         })
 
 

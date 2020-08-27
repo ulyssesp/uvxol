@@ -67,6 +67,8 @@ export default class ActionsList extends Vue {
   dialog = false;
   editingId: number | undefined = undefined;
   editingAction: Action | undefined = undefined;
+  // Used above for filtering the list
+  // TODO: also filter items
   search = "";
   get flatactions() {
     return array.map((a: Action) => ({
@@ -84,17 +86,20 @@ export default class ActionsList extends Vue {
     { text: "voteOptions", value: "voteOptions" },
     { text: "edit", value: "action" },
   ];
+  // Delete and emit data-change
   deleteAction(id: number) {
     actionStore
       .deleteAction(id)
       .then(() => this.$emit("data-change"))
       .catch((err) => (this.err = err));
   }
+  // Edit and open dialog
   editAction(id: number) {
     this.editingId = id;
-    this.editingAction = actionStore.actionsList[id];
+    this.editingAction = actionStore.actionsDict[id];
     this.dialog = true;
   }
+  // Remember to Reset the dialog!
   closeDialog() {
     this.dialog = false;
     this.editingAction = undefined;
