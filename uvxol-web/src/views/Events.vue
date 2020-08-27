@@ -46,8 +46,8 @@ export default class EventsView extends Vue {
       eventStore.getEvents(),
       voteOptionStore.getVoteOptions(),
     ])
-      .catch((e: any) => (this.err = e))
-      .then(() => (this.err = "loaded"));
+      .then(() => (this.err = "loaded"))
+      .catch((e: any) => (this.err = e));
   }
   protected mounted() {
     this.refresh();

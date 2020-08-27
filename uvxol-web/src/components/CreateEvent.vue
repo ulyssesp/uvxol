@@ -10,13 +10,25 @@
       <v-container>
         <v-row>
           <v-col cols="4">
-            <v-text-field v-model="editedEvent.name" label="Name"></v-text-field>
+            <v-text-field
+              v-model="editedEvent.name"
+              label="Name"
+              placeholder="To find it on this site"
+            ></v-text-field>
           </v-col>
           <v-col cols="4">
-            <v-text-field v-model="editedEvent.duration" label="Duration"></v-text-field>
+            <v-text-field
+              v-model="editedEvent.duration"
+              label="Duration"
+              placeholder="Of all actions"
+            ></v-text-field>
           </v-col>
           <v-col cols="4">
-            <v-text-field v-model="editedEvent.delay" label="Delay"></v-text-field>
+            <v-text-field
+              v-model="editedEvent.delay"
+              label="Delay"
+              placeholder="Before firing actions"
+            ></v-text-field>
           </v-col>
         </v-row>
         <v-row>
@@ -26,6 +38,7 @@
               item-text="name"
               v-model="editedEvent.triggers"
               label="Triggers"
+              placeholder="Events fired after this one"
               item-value="id"
               multiple
               dense
@@ -51,6 +64,7 @@
               :items="actions"
               item-text="name"
               label="Actions"
+              placeholder="Played after Delay"
               v-model="editedEvent.actions"
               item-value="id"
               multiple
@@ -79,6 +93,7 @@
               :items="voteOptions"
               item-text="name"
               label="Depends on"
+              placeholder="These vote options to fire"
               v-model="editedEvent.dependencies"
               item-value="id"
               multiple
@@ -105,6 +120,7 @@
               :items="voteOptions"
               item-text="name"
               label="Prevented by"
+              placeholder="these vote options - won't fire"
               v-model="editedEvent.preventions"
               item-value="id"
               multiple

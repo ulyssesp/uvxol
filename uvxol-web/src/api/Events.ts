@@ -16,7 +16,7 @@ export const getEventsForTrigger: (triggerId: EventId) => Promise<ActionEvent[]>
   const params = new URLSearchParams();
   params.append("triggerId", triggerId.toString());
 
-  return fetch(eventsuri, { method: 'GET', body: params })
+  return fetch(eventsuri + "?" + params.toString(), { method: 'GET' })
     .then(res => res.json())
     .then((as: ActionEvent[][]) => as[0] || [])
     .then(array.map(mapEvent));
@@ -26,7 +26,7 @@ export const getStartEvents = () => {
   const params = new URLSearchParams();
   params.append("triggerId", "-1");
 
-  return fetch(eventsuri, { method: 'GET', body: params })
+  return fetch(eventsuri + "?" + params.toString(), { method: 'GET' })
     .then(res => res.json())
     .then((as: ActionEvent[][]) => as[0] || [])
     .then(array.map(mapEvent));
@@ -62,5 +62,5 @@ export const deleteEvent: (id: number) => Promise<any> =
   (id) => {
     const params = new URLSearchParams();
     params.set("id", id.toString());
-    return fetch(eventsuri, { method: 'DELETE', body: params })
+    return fetch(eventsuri + "?" + params.toString(), { method: 'DELETE' })
   }

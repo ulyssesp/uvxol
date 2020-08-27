@@ -36,7 +36,7 @@ export default class Actions extends Vue {
   private refresh() {
     this.err = "loading";
     Promise.all([actionStore.getActions(), voteOptionStore.getVoteOptions()])
-      .then(() => (this.err = "success"))
+      .then(() => (this.err = "loaded"))
       .catch((err: any) => (this.err = err));
   }
   protected mounted() {

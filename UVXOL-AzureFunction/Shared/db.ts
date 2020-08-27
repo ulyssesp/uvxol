@@ -435,7 +435,7 @@ export const updateEvent = async function (
             .input('duration', sql.Int, duration)
             .input('delay', sql.Int, delay)
             .input('name', sql.Text, name)
-            .query`update Events set Duration = @duration, Delay = @delay, Name = @namewhere EventId = @id`)
+            .query`update Events set Duration = @duration, Delay = @delay, Name = @name where EventId = @id`)
         .then(() => deleteEventVoteOptionsByEventId(id))
         .then(() => deleteEventTriggersByEventId(id))
         .then(() => deleteEventActionsByEventId(id))

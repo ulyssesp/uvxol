@@ -10,10 +10,18 @@
       <v-container>
         <v-row>
           <v-col cols="4">
-            <v-text-field v-model="editedAction.name" label="Name"></v-text-field>
+            <v-text-field
+              v-model="editedAction.name"
+              label="Name"
+              placeholder="unique to this interface"
+            ></v-text-field>
           </v-col>
           <v-col cols="4">
-            <v-text-field v-model="editedAction.location" label="Location"></v-text-field>
+            <v-text-field
+              v-model="editedAction.location"
+              label="Location"
+              placeholder="where this action will play"
+            ></v-text-field>
           </v-col>
           <v-col cols="4">
             <v-select
@@ -29,7 +37,11 @@
         </v-row>
         <v-row v-if="editedAction.type === 'video' || editedAction.type === 'audio'">
           <v-col cols="12">
-            <v-text-field v-model="file" label="File"></v-text-field>
+            <v-text-field
+              v-model="editedAction.filePath"
+              label="File"
+              placeholder="filename of content"
+            ></v-text-field>
           </v-col>
         </v-row>
         <v-row v-if="editedAction.type === 'vote'">
@@ -41,6 +53,7 @@
               :items="voteOptions"
               item-text="name"
               label="Vote options"
+              placeholder="choices for this vote"
               v-model="editedAction.voteOptions"
               item-value="id"
               multiple

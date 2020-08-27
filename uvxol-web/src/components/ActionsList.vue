@@ -1,34 +1,61 @@
 <template>
   <v-container fluid grid-list-lg>
-    <v-row>
-      <h4>Status: {{ err }}</h4>
-    </v-row>
     <v-card-title>
       <v-container>
         <v-row>
-          <v-col cols="2">Actions</v-col>
-          <v-col class="flex-shrink-1"></v-col>
+          <v-col class="d-flex align-center">
+            <h2>Actions</h2>
+            <a
+              href="https://www.notion.so/fpnewtion/Program-Logic-d5d9da560317453a8ba519cf2b4bd5d6#d2d53abf8aa9469eb9ff72c2322d3c65"
+              target="_new"
+            >
+              <v-btn text small>
+                <v-icon small>mdi-information-outline</v-icon>
+              </v-btn>
+            </a>
+          </v-col>
+        </v-row>
+        <v-row class="d-flex align-baseline">
+          <v-col>
+            <sub>Status: {{ err }}</sub>
+          </v-col>
           <v-col class="flex-grow-1">
             <v-text-field
               v-model="search"
               label="Search"
-              append-icon="search"
+              append-icon="mdi-table-search"
               single-line
               hide-details
             ></v-text-field>
           </v-col>
-          <v-col class="flex-grow-0">
+          <v-col class="flex-grow-0 flex-shrink-1" cols="2">
+            <v-dialog v-model="deleteDialog">
+              <template v-slot:activator="{ on }">
+                <v-btn small color="error" dark class="mb-2" v-on="on">Delete visible</v-btn>
+              </template>
+              <v-card>
+                <v-card-title>Confirm deletion</v-card-title>
+                <v-card-text>Are you sure you want to delete {{ currentActions.length }} items?</v-card-text>
+                <v-card-actions>
+                  <v-spacer></v-spacer>
+                  <v-btn text color="primary" @click="closeDeleteDialog">Uhh nvm</v-btn>
+                  <v-btn color="primary" @click="deleteConfirmed">Get rid of that shite</v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
+          </v-col>
+          <v-col class="flex-grow-0 flex-shrink-1" cols="1">
             <v-dialog v-model="dialog">
               <template v-slot:activator="{ on }">
-                <v-btn color="primary" dark class="mb-2" v-on="on">New Item</v-btn>
+                <v-btn small color="primary" dark class="mb-2" v-on="on">New</v-btn>
               </template>
               <CreateAction
                 :actions="actions"
                 :voteOptions="voteOptions"
                 :updateAction="editingAction"
                 :updateId="editingId"
-                v-on:data-change="refresh"
                 v-on:done="closeDialog"
+                v-on:data-change="refresh"
               ></CreateAction>
             </v-dialog>
           </v-col>
@@ -41,10 +68,11 @@
       :items-per-page="10"
       class="elevation-1"
       :search="search"
+      v-on:current-items="changeCurrentActions"
     >
       <template v-slot:item.action="{ item }">
-        <v-icon small @click="editAction(item.id)">edit</v-icon>
-        <v-icon small @click="deleteAction(item.id)">delete</v-icon>
+        <v-icon small @click="editAction(item.id)">mdi-pencil</v-icon>
+        <v-icon small @click="deleteAction(item.id)">mdi-delete</v-icon>
       </template>
     </v-data-table>
   </v-container>
@@ -65,8 +93,10 @@ export default class ActionsList extends Vue {
   @Prop({ required: true }) readonly voteOptions!: VoteOption[];
   @Prop({}) err!: string;
   dialog = false;
+  deleteDialog = false;
   editingId: number | undefined = undefined;
   editingAction: Action | undefined = undefined;
+  currentActions: Action[] = [];
   // Used above for filtering the list
   // TODO: also filter items
   search = "";
@@ -80,9 +110,9 @@ export default class ActionsList extends Vue {
   }
   headers = [
     { text: "name", value: "name" },
-    { text: "file", value: "filePath" },
-    { text: "location", value: "location" },
     { text: "type", value: "type" },
+    { text: "location", value: "location" },
+    { text: "file", value: "filePath" },
     { text: "voteOptions", value: "voteOptions" },
     { text: "edit", value: "action" },
   ];
@@ -104,6 +134,27 @@ export default class ActionsList extends Vue {
     this.dialog = false;
     this.editingAction = undefined;
     this.editingId = undefined;
+  }
+  refresh() {
+    this.$emit("data-change");
+  }
+  changeCurrentActions(v: any[]) {
+    console.log("Changing? " + v.length);
+    this.currentActions = v;
+  }
+  deleteVisibleDialog() {
+    this.deleteDialog = true;
+  }
+  closeDeleteDialog() {
+    this.deleteDialog = false;
+  }
+  deleteConfirmed() {
+    Promise.all(
+      this.currentActions.map((action) => actionStore.deleteAction(action.id))
+    )
+      .then(() => this.$emit("data-change"))
+      .then(() => this.closeDeleteDialog())
+      .catch((err) => (this.err = err));
   }
 }
 </script>
