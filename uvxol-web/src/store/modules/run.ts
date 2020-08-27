@@ -22,6 +22,7 @@ import * as ot from 'fp-ts/lib/OptionT';
 import * as chn from 'fp-ts/lib/Chain';
 import { getFilterableComposition } from 'fp-ts/lib/Filterable';
 import Socket from './socket';
+import { eqNumber } from 'fp-ts/lib/Eq';
 
 // TODO: Should probably move this somewhere
 const socket = new Socket();
@@ -64,6 +65,9 @@ const taskOption: mo.Monad1<'TaskOption'> = {
 
 @Module({ dynamic: true, name: 'runStore', store })
 class Run extends VuexModule {
+
+  static startEvents: () => ActionEvent[] = () =>
+    eventStore.eventsList.filter(e => eventStore.eventsByTrigger[e.id] == null)
 
   // Generate all tasks required to run these events.
   static runEvents: (self: Run) => (es: Set<ActionEvent>) => task.Task<void>[] = self =>
@@ -128,7 +132,7 @@ class Run extends VuexModule {
               task.chain(() =>
                 pipe(
                   // Grab the triggered events
-                  task.fromIO(() => option.fromNullable(eventStore.eventsByTrigger[e.id])),
+                  task.fromIO(() => option.fromNullable(set.fromArray(eqNumber)(e.triggers))),
                   // If there are none, create an empty set
                   task.map(option.getOrElse(constant(set.empty as Set<number>))),
                   // filter out any events we haven't fetched
@@ -173,7 +177,7 @@ class Run extends VuexModule {
       }),
       // fetch the start events
       task.chain(_ => constant(eventStore.getStartEvents())),
-      task.chain(_ => task.of(eventStore.startEvents)),
+      task.chain(_ => task.of(Run.startEvents())),
       task.map(set.fromArray(eqActionEvent)),
       // Run the start events in sequence
       task.chain(flow(Run.runEvents(this), array.array.sequence(task.task)))

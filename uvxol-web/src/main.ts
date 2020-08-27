@@ -10,7 +10,7 @@ Vue.config.silent = true;
 
 // Vue.use(new VueSocketIO({
 //   debug: true,
-//   connection: "ws://localhost:9980",
+//   connection: "ws://localhost:9981",
 //   vuex: {
 //     store,
 //     actionPrefix: "SOCKET_",

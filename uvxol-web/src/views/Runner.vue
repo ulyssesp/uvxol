@@ -53,11 +53,12 @@ export default class EventsList extends Vue {
   private err = "";
   get actionLogByLocation() {
     return pipe(
-      this.log,
+      this.events,
       array.chain((e) => e.actions),
       na.fromArray,
       option.map(na.groupBy((a) => a.location.toLowerCase())),
       option.map(r.toArray),
+      option.map(array.reverse),
       option.getOrElse(constant([] as [string, na.NonEmptyArray<Action>][]))
     );
   }

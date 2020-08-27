@@ -106,7 +106,7 @@ export const getEventsForTrigger: (triggerId: number) => Promise<any> = async fu
                 for json auto
             ) as preventions
             from Events as E
-            join EventTriggers as T on (T.TriggerId = @triggerId and T.EventId = E.EventId)
+            join EventTriggers as T on (T.EventId = @triggerId and T.TriggerId = E.EventId)
             for json auto`
     )
 }
@@ -137,7 +137,7 @@ export const getStartEvents: () => Promise<any> = async function () {
                 for json auto
             ) as preventions
             from Events as E
-            where not exists (select 1 from EventTriggers as T where T.EventId = E.EventId)
+            where not exists (select 1 from EventTriggers as T where T.TriggerId = E.EventId)
             for json auto`
     )
 }

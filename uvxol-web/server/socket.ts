@@ -2,7 +2,7 @@ import * as net from 'net';
 
 export default class Socket {
   private readonly SERVER_URL = "localhost";
-  private readonly SERVER_PORT = 9980
+  private readonly SERVER_PORT = 9981
   timeout: number = 1000;
   socket: net.Socket;
   connected: boolean = false;

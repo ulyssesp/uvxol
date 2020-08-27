@@ -1,6 +1,6 @@
 export default class Socket {
   private readonly SERVER_URL = "localhost";
-  private readonly SERVER_PORT = 9980
+  private readonly SERVER_PORT = 9981
   timeout: number = 1000;
   socket: WebSocket;
   connected: boolean = false;
