@@ -8,7 +8,7 @@
     </v-row>
     <v-row>{{ chosenVoteOptions }}</v-row>
     <v-row class="flex-nowrap">
-      <v-col cols="2">
+      <v-col cols="2" class="flex-grow-1">
         <v-row>
           <v-subheader>Events</v-subheader>
         </v-row>

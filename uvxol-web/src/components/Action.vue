@@ -1,26 +1,19 @@
 <template>
   <v-card>
-    <v-list-item three-line>
-      <v-list-item-content class="align-self-start">
-        <v-list-item-title class="title" v-text="action.name"></v-list-item-title>
-        <v-chip-group multiple>
-          <v-chip>{{ action.type }}</v-chip>
-          <v-chip>{{ action.location }}</v-chip>
-        </v-chip-group>
-        <v-list-item-subtitle>
-          <div class="text-center" v-if="action.type == 'vote'">
-            <v-subheader>votes</v-subheader>
-            <v-btn
-              class="ma-2"
-              v-for="(voteOption, i) in action.voteOptions"
-              :key="i"
-              @click="chooseOption(voteOption.id, action.id)"
-            >{{ voteOption.name }}</v-btn>
-          </div>
-          <div else>{{ action.filePath }}</div>
-        </v-list-item-subtitle>
-      </v-list-item-content>
-    </v-list-item>
+    <v-card-title class="title" v-text="action.name"></v-card-title>
+    <v-card-text>
+      <v-chip-group multiple>
+        <v-chip small>{{ action.type }}</v-chip>
+        <v-chip small>{{ action.location }}</v-chip>
+      </v-chip-group>
+      <v-list-item-subtitle v-if="action.type != 'vote'">{{ action.filePath }}</v-list-item-subtitle>
+      <v-list dense v-if="action.type == 'vote'">
+        <v-subheader>votes</v-subheader>
+        <v-list-item v-for="(voteOption, i) in action.voteOptions" :key="i">
+          <v-btn dense text @click="chooseOption(voteOption.id, action.id)">{{ voteOption.text }}</v-btn>
+        </v-list-item>
+      </v-list>
+    </v-card-text>
   </v-card>
 </template>
 

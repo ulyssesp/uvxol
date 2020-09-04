@@ -37,7 +37,7 @@
               :items="events"
               item-text="name"
               v-model="editedEvent.triggers"
-              label="Triggers"
+              label="Can trigger"
               placeholder="Events fired after this one"
               item-value="id"
               multiple

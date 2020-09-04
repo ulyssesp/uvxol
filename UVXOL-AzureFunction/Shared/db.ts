@@ -167,7 +167,7 @@ export const getActions: () => Promise<any> = async function () {
 }
 
 export const getVoteOption = (id: number) =>
-    connect.then(() => pool.request().input('id', sql.int, id).query`
+    connect.then(() => pool.request().input('id', sql.Int, id).query`
         select VO.VoteOptionId as id, VO.Name as name, VO.Text as text,
             (select VOD.DependencyId as id
                 from VoteOptionDependencies as VOD 

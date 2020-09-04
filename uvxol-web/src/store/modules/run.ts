@@ -17,6 +17,7 @@ import * as ap from 'fp-ts/lib/Applicative';
 import * as tup from 'fp-ts/lib/Tuple';
 import * as m from 'fp-ts/lib/Monoid';
 import * as mo from 'fp-ts/lib/Monad';
+import * as rand from 'fp-ts/lib/Random';
 import * as f from 'fp-ts/lib/Functor';
 import * as ot from 'fp-ts/lib/OptionT';
 import * as chn from 'fp-ts/lib/Chain';
@@ -62,6 +63,12 @@ const taskOption: mo.Monad1<'TaskOption'> = {
   URI: 'TaskOption',
   ...ot.getOptionM(task.task)
 }
+// Send the location and filepath to the TD server
+const createTDTask = (self: Run, a: ty.Action, e: ty.ActionEvent) =>
+  pipe(
+    task.fromIO(() => Run.sendToTD(self, a.location, a.filePath)),
+    task.apSecond(task.delay(e.duration)(task.of(option.none)))
+  );
 
 @Module({ dynamic: true, name: 'runStore', store })
 class Run extends VuexModule {
@@ -92,41 +99,58 @@ class Run extends VuexModule {
         pipe(
           // Push the event into the run list
           task.fromIO(() => { self.runList.push(e); }),
-          // Only return the delay action (?)
+          // Then do the actions
           task.apSecond(
             pipe(
               e.actions,
-              array.map<ty.Action, task.Task<option.Option<void>>>(a => pipe(
-                // Send the location and filepath to the TD server
-                task.fromIO(() => Run.sendToTD(self, a.location, a.filePath)),
-                // map the result to the action id
-                task.map(() => a.id),
-                // Create a Task<Option<_>> from the pending vote options
-                id => task.ap(id)(task.of(id => option.fromNullable(self.pendingVoteOptions[id]))),
-                // Figure out the voteoptionid that won 
-                ta => taskOption.chain(ta, flow(
-                  // Sort the voteoptions
-                  array.sort(ord.ordNumber),
-                  // chop into same vote options
-                  array.chop(as => {
-                    const { init, rest } = array.spanLeft((a: number) => eq.eqNumber.equals(a, as[0]))(as)
-                    return [init, rest];
-                  }),
-                  // convert array of votes to [vote, count] tuple
-                  array.map(arr => [arr[0], arr.length] as [number, number]),
-                  // convert to nonemptyarray
-                  nonEmptyArray.fromArray,
-                  // grab the max based on the second tuple element
-                  option.map(nonEmptyArray.max(ord.ord.contramap(ord.ordNumber, e => e[1]))),
-                  // grabe the voteoption id of the tuple
-                  option.map(tuple.fst),
-                  // convert to task (?)
-                  task.of
-                )),
-                // Set chosenVoteOptions[winningVoteOptionId] to winningVoteOptionId
-                t => taskOption.ap(taskOption.of(r => { Vue.set(self.chosenVoteOptions, r, r); }), t),
-              )),
-              tseq,
+              array.map<ty.Action, task.Task<option.Option<void>>[]>(a => [
+                createTDTask(self, a, e),
+                pipe(
+                  // Create a Task<Option<_>> from the pending vote options
+                  () => Promise.resolve(option.fromNullable(self.pendingVoteOptions[a.id])),
+                  // Figure out the voteoptionid that won 
+                  ta => taskOption.chain(ta, flow(
+                    // Sort the voteoptions
+                    array.sort(ord.ordNumber),
+                    // chop into same vote options
+                    array.chop(as => {
+                      const { init, rest } = array.spanLeft((a: number) => eq.eqNumber.equals(a, as[0]))(as)
+                      return [init, rest];
+                    }),
+                    // convert array of votes to [vote, count] tuple
+                    array.map(arr => [arr[0], arr.length] as [number, number]),
+                    // convert to nonemptyarray
+                    nonEmptyArray.fromArray,
+                    // grab the max based on the second tuple element
+                    option.map(nonEmptyArray.max(ord.ord.contramap(ord.ordNumber, e => e[1]))),
+                    // grab the voteoption id of the tuple
+                    option.map(tuple.fst),
+                    // Create task
+                    task.of
+                  )),
+                  task.chain(option.fold(
+                    () => pipe(
+                      option.fromNullable(a.voteOptions),
+                      option.fold<VoteOption[], task.Task<option.Option<VoteOptionId>>>(
+                        () => task.of<option.Option<number>>(option.none),
+                        vo => pipe(
+                          task.fromIO(rand.randomInt(0, vo.length - 1)),
+                          task.map(n => pipe(
+                            option.fromNullable(vo[n]),
+                            option.map(vo => vo.id))
+                          ),
+                        )
+                      )
+                    ),
+                    n => task.of(option.some(n))
+                  )),
+                  // Set chosenVoteOptions[winningVoteOptionId] to winningVoteOptionId
+                  t => taskOption.ap(taskOption.of(r => { Vue.set(self.chosenVoteOptions, r, r); }), t),
+                  task.delay(e.duration || 0)
+                )
+              ]),
+              array.flatten,
+              tparallel,
               // Wait out the delay
               task.delay(e.delay || 0),
               task.chain(() =>
@@ -138,9 +162,7 @@ class Run extends VuexModule {
                   // filter out any events we haven't fetched
                   task.map(set.filterMap(eqActionEvent)(id => option.fromNullable(eventStore.events[id]))),
                   // run the events in sequence
-                  task.chain(flow(Run.runEvents(self), tseq)),
-                  // Delay for duration
-                  task.delay(e.duration || 0)
+                  task.chain(flow(Run.runEvents(self), tparallel)),
                 )),
             ))),
       ])),

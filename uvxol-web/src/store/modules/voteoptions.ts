@@ -15,8 +15,8 @@ class VoteOptions extends VuexModule {
   }
 
   @Action({ commit: 'addVoteOption', rawError: true })
-  public async createVoteOption(vo: {name: string, text: string, dependencies: number[], preventions: number[]}): Promise<VoteOption> {
-    return api.postVoteOption(vo.name, vo.text, vo.dependencies, vo.preventions).then(res => res[0][0])
+  public async createVoteOption(vo: { name: string, text: string, dependencies: number[], preventions: number[] }): Promise<VoteOption> {
+    return api.postVoteOption(vo.name, vo.text, vo.dependencies, vo.preventions)
   }
 
   @Action({ commit: 'removeVoteOption', rawError: true })
@@ -37,7 +37,7 @@ class VoteOptions extends VuexModule {
   @Mutation
   public async addVoteOptions(vos: VoteOption[]) {
     pipe(vos, array.map(vo => async () => { Vue.set(this.voteOptions, vo.id, vo); }),
-        array.array.sequence(task.task))();
+      array.array.sequence(task.task))();
   }
 
   @Mutation

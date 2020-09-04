@@ -30,6 +30,6 @@ export const deleteVoteOption: (id: number) => Promise<any> =
     (id) => {
         const params = new URLSearchParams();
         params.set("id", id.toString());
-        return fetch(voteOptionsUri, { body: params });
+        return fetch(voteOptionsUri + "?" + params.toString(), { method: 'DELETE' });
     }
 
