@@ -133,7 +133,6 @@ export default class ActionsList extends Vue {
   }
   // Remember to Reset the dialog!
   closeDialog() {
-    console.log("hmm");
     this.dialog = false;
     this.editingAction = undefined;
     this.editingId = undefined;
