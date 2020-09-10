@@ -45,7 +45,7 @@
             </v-dialog>
           </v-col>
           <v-col class="flex-grow-0" cols="1">
-            <v-dialog v-model="dialog">
+            <v-dialog v-model="dialog" @click:outside="closeDialog">
               <template v-slot:activator="{ on }">
                 <v-btn small color="primary" dark v-on="on">New Item</v-btn>
               </template>
@@ -70,6 +70,7 @@
       class="elevation-1"
       :search="search"
       @current-items="changeCurrentItems"
+      @click:row="item => editEvent(item.id)"
     >
       <template v-slot:item.action="{ item }">
         <v-icon small @click="editEvent(item.id)">mdi-pencil</v-icon>
@@ -81,7 +82,7 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from "vue-property-decorator";
-import { ActionEvent, Action, VoteOption } from "../types";
+import { ActionEvent, Action, VoteOption, ActionType } from "../types";
 import { array, option } from "fp-ts";
 import { pipe } from "fp-ts/lib/pipeable";
 import Events from "../store/modules/events";
@@ -94,7 +95,7 @@ import CreateEvent from "./CreateEvent.vue";
 })
 export default class EventsList extends Vue {
   @Prop({ required: true }) readonly events!: ActionEvent[];
-  @Prop({ required: true }) readonly actions!: Action[];
+  @Prop({ required: true }) readonly actions!: Action<ActionType>[];
   @Prop({ required: true }) readonly voteOptions!: VoteOption[];
   @Prop({}) err!: string;
   dialog = false;
@@ -107,7 +108,7 @@ export default class EventsList extends Vue {
     return array.map((e: ActionEvent) => ({
       ...e,
       actions: array
-        .map((a: Action) => a.name)(e.actions || [])
+        .map((a: Action<ActionType>) => a.name)(e.actions || [])
         .join(),
       dependencies: array
         .map<VoteOption, string>((vo) => vo.name)(e.dependencies || [])

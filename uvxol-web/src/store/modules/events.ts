@@ -1,7 +1,7 @@
 import * as api from '../../api/Events';
 import Vue from 'vue';
 import { Module, VuexModule, Action, Mutation, MutationAction, getModule } from 'vuex-module-decorators';
-import { ActionEvent, EventId } from '@/types';
+import { ActionEvent, EventId, isVoteAction } from '@/types';
 import store from '@/store';
 import { array, task, set, eq } from 'fp-ts';
 import { pipe } from 'fp-ts/lib/pipeable';
@@ -13,9 +13,8 @@ import { logid, logval } from '../../utils/fp-utils';
 const storeVoteOptions: (a: ActionEvent[]) => task.Task<ActionEvent[]> = es => pipe(
   es,
   array.chain(e => e.actions),
-  array.chain(a => a.voteOptions || []),
+  array.chain(a => isVoteAction(a) ? a.voteOptions : []),
   task.of,
-  logid(task.task),
   task.chainFirst(flow(voteOptionStore.insertVoteOptions, constant)),
   task.chain(constant(task.of(es)))
 );

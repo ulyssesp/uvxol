@@ -32,7 +32,7 @@ export const getEvent: (id: EventId) => Promise<any> = async function (id) {
             EventId as id, Name as name, Delay as delay, Duration as duration, 
             (select ET.TriggerId as id from EventTriggers as ET
                 where (ET.EventId = E.EventId) for json auto) as triggers,
-            (select Actions.ActionId as id, Location as location, FilePath as filePath, Type as type, Name as name
+            (select Actions.ActionId as id, Zone as zone, Location as location, FilePath as filePath, Type as type, Name as name
                 from Actions join EventActions 
                 on (EventActions.EventId = E.EventId and Actions.ActionId = EventActions.ActionId) 
                 for json auto
@@ -59,7 +59,7 @@ export const getEvents: () => Promise<any> = async function () {
             EventId as id, Name as name, Delay as delay, Duration as duration, 
             (select ET.TriggerId as id from EventTriggers as ET
                 where (ET.EventId = E.EventId) for json auto) as triggers,
-            (select Actions.ActionId as id, Location as location, FilePath as filePath, Type as type, Name as name
+            (select Actions.ActionId as id, Zone as zone, Location as location, FilePath as filePath, Type as type, Name as name
                 from Actions join EventActions 
                 on (EventActions.EventId = E.EventId and Actions.ActionId = EventActions.ActionId) 
                 for json auto
@@ -87,7 +87,7 @@ export const getEventsForTrigger: (triggerId: number) => Promise<any> = async fu
             E.EventId as id, Name as name, Delay as delay, Duration as duration, 
             (select ET.TriggerId as id from EventTriggers as ET
                 where (ET.EventId = E.EventId) for json auto) as triggers,
-            (select Actions.ActionId as id, Location as location, FilePath as filePath, Type as type, Name as name,
+            (select Actions.ActionId as id, Zone as zone, Location as location, FilePath as filePath, Type as type, Name as name,
                     (select VO.VoteOptionId as id, VO.Text as text, VO.Name as name from VoteOptions as VO 
                         join ActionVoteOptions as AVO on (AVO.ActionId = Actions.ActionId and VO.VoteOptionId = AVO.VoteOptionId) 
                         for json auto) as voteOptions
@@ -118,7 +118,7 @@ export const getStartEvents: () => Promise<any> = async function () {
             EventId as id, Name as name, Delay as delay, Duration as duration, 
             (select ET.TriggerId as id from EventTriggers as ET
                 where (ET.EventId = E.EventId) for json auto) as triggers,
-            (select Actions.ActionId as id, Location as location, FilePath as filePath, Type as type, Name as name,
+            (select Actions.ActionId as id, Zone as zone, Location as location, FilePath as filePath, Type as type, Name as name,
                     (select VO.VoteOptionId as id, VO.Text as text, VO.Name as name from VoteOptions as VO 
                         join ActionVoteOptions as AVO on (AVO.ActionId = Actions.ActionId and VO.VoteOptionId = AVO.VoteOptionId) 
                         for json auto) as voteOptions
@@ -145,7 +145,7 @@ export const getStartEvents: () => Promise<any> = async function () {
 
 export const getAction: (id: number) => Promise<any> = async function (id) {
     return connect.then(() => pool.request().input('id', sql.Int, id)
-        .query`select A.ActionId as id, A.Name as name, A.Location as location, A.FilePath as filePath, A.Type as type, 
+        .query`select A.ActionId as id, A.Name as name, A.Zone as zone, A.Location as location, A.FilePath as filePath, A.Type as type, 
             (select VO.VoteOptionId as id, VO.Name as name from VoteOptions as VO 
                 join ActionVoteOptions as AVO
                 on (VO.VoteOptionId = AVO.VoteOptionId and AVO.ActionId = A.ActionId)
@@ -157,7 +157,7 @@ export const getAction: (id: number) => Promise<any> = async function (id) {
 
 export const getActions: () => Promise<any> = async function () {
     return connect.then(() =>
-        pool.query`select A.ActionId as id, A.Name as name, A.Location as location, A.FilePath as filePath, A.Type as type, 
+        pool.query`select A.ActionId as id, A.Name as name, A.Zone as zone, A.Location as location, A.FilePath as filePath, A.Type as type, 
             (select VO.VoteOptionId as id, VO.Name as name from VoteOptions as VO 
                 join ActionVoteOptions as AVO
                 on (VO.VoteOptionId = AVO.VoteOptionId and AVO.ActionId = A.ActionId)
@@ -274,6 +274,7 @@ export const insertEvent = async function (
 }
 
 export const insertAction = async function (
+    zone: string,
     location: string,
     type: number,
     name: string,
@@ -282,14 +283,15 @@ export const insertAction = async function (
     filePath?: string) {
     return connect
         .then(() => pool.request()
+            .input('zone', sql.NVarChar, zone)
             .input('location', sql.NVarChar, location)
             .input('type', sql.Int, type)
             .input('name', sql.Text, name)
             .input('text', sql.Text, text)
             .input('filePath', sql.Text, filePath)
-            .query`insert into Actions (Location, Type, Name, FilePath, Text) 
+            .query`insert into Actions (Zone, Location, Type, Name, FilePath, Text) 
                 output Inserted.ActionId 
-                values (@location, @type, @name, @filePath, @text)`)
+                values (@zone, @location, @type, @name, @filePath, @text)`)
         .then(actionResult => {
             const actionId = actionResult.recordset[0].ActionId
 
@@ -484,6 +486,7 @@ export const updateEvent = async function (
 
 export const updateAction = async function (
     id: ActionId,
+    zone: string,
     location: string,
     type: number,
     name: string,
@@ -493,12 +496,14 @@ export const updateAction = async function (
     return connect
         .then(() => pool.request()
             .input('id', sql.Int, id)
+            .input('zone', sql.NVarChar, zone)
             .input('location', sql.NVarChar, location)
             .input('type', sql.Int, type)
             .input('name', sql.Text, name)
             .input('text', sql.Text, text)
             .input('filePath', sql.Text, filePath)
             .query`update Actions set 
+                Zone=@zone,
                 Location=@location,
                 Type=@type,
                 Name=@name,

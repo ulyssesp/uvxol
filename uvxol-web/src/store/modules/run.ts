@@ -63,12 +63,110 @@ const taskOption: mo.Monad1<'TaskOption'> = {
   URI: 'TaskOption',
   ...ot.getOptionM(task.task)
 }
-// Send the location and filepath to the TD server
-const createTDTask = (self: Run, a: ty.Action, e: ty.ActionEvent) =>
-  pipe(
-    task.fromIO(() => Run.sendToTD(self, a.location, a.filePath)),
-    task.apSecond(task.delay(e.duration)(task.of(option.none)))
+
+// Create a task to be run before event
+const eventPrepareTask: (self: Run, e: ty.ActionEvent) => task.Task<void> =
+  (self, e) =>
+    // Push the event into the run list
+    task.fromIO(() => {
+      self.runList.push(
+        Object.assign(e, {
+          active: false,
+          actions: e.actions.map(a =>
+            // Disable UI elements on start
+            Object.assign({ active: false }))
+        }));
+    });
+
+// Create a task to be run after delay, but before duration
+const eventStartTask: (self: Run, e: ty.ActionEvent) => task.Task<void> =
+  (self, e) => pipe(
+    e.actions.map(actionStartTask(self, e)),
+    tparallel,
+    // Set all the actions to active
+    task.apSecond(task.fromIO(() => {
+      self.runList = self.runList.map(event => {
+        const actions = event.actions;
+        const newActions = actions.map(action => Object.assign({}, action, { active: true }));
+        return Object.assign({}, event, { actions: newActions });
+      });
+    }))
   );
+
+// Create a task to be run after delay, but before duration
+const actionStartTask: (self: Run, e: ty.ActionEvent) => (a: ty.Action<ty.ActionType>) => task.Task<void> =
+  (self, e) => a =>
+    // Send everything to TD
+    task.fromIO(() => Run.sendToTD(
+      self,
+      a.zone,
+      a.location,
+      ty.isNotVoteAction(a) ? a.filePath : undefined,
+      ty.isVoteAction(a) ? a.voteOptions : undefined,
+      ty.isVoteAction(a) ? a.text : undefined
+    ));
+
+// Create a task to be run after delay, and after duration
+const eventEndTask: (self: Run, e: ty.ActionEvent) => task.Task<void> =
+  (self, e) => pipe(
+    e.actions.map(actionEndTask(self, e)),
+    tparallel,
+    // Set all the actions to inactive
+    task.apSecond(task.fromIO(() => {
+      self.runList = self.runList.map(event => {
+        const actions = event.actions;
+        const newActions = actions.map(action => Object.assign({}, action, { active: false }));
+        return Object.assign({}, event, { actions: newActions });
+      });
+    }))
+  );
+
+// Create a task to be run after delay and duration
+const actionEndTask: (self: Run, e: ty.ActionEvent) => (a: ty.Action<ty.ActionType>) => task.Task<void> =
+  (self, e) => a =>
+    ty.isVoteAction(a) ?
+      actionEndVote(self, e)(a) : task.fromIO(() => undefined) /* Remove both vote options and video from screen and count votes */
+
+const actionEndVote: (self: Run, e: ty.ActionEvent) => (a: ty.Action<"vote">) => task.Task<void> =
+  (self, e) => a =>
+    pipe(
+      // Create a Task<Option<_>> from the pending vote options
+      () => Promise.resolve(option.fromNullable(self.pendingVoteOptions[a.id])),
+      // Figure out the voteoptionid that won 
+      ta => taskOption.chain(ta, flow(
+        // Sort the voteoptions
+        array.sort(ord.ordNumber),
+        // chop into same vote options
+        array.chop(as => {
+          const { init, rest } = array.spanLeft((a: number) => eq.eqNumber.equals(a, as[0]))(as)
+          return [init, rest];
+        }),
+        // convert array of votes to [vote, count] tuple
+        array.map(arr => [arr[0], arr.length] as [number, number]),
+        // convert to nonemptyarray
+        nonEmptyArray.fromArray,
+        // grab the max based on the second tuple element
+        option.map(nonEmptyArray.max(ord.ord.contramap(ord.ordNumber, e => e[1]))),
+        // grab the voteoption id of the tuple
+        option.map(tuple.fst),
+        // Create task
+        task.of
+      )),
+      task.chain(option.fold(
+        () => pipe(
+          a.voteOptions,
+          vo => pipe(
+            task.fromIO(rand.randomInt(0, vo.length - 1)),
+            task.map(n => vo[n].id),
+          )
+        ),
+        n => task.of(n)
+      )),
+      // Set chosenVoteOptions[winningVoteOptionId] to winningVoteOptionId
+      chosen => task.ap(chosen)(task.of((r: number) => { Vue.set(self.chosenVoteOptions, r, r); })),
+      task.delay(e.duration || 0)
+    )
+
 
 @Module({ dynamic: true, name: 'runStore', store })
 class Run extends VuexModule {
@@ -97,83 +195,27 @@ class Run extends VuexModule {
         () => eventStore.getEventsForTrigger(e.id).then(constVoid),
         // Run the events
         pipe(
-          // Push the event into the run list
-          task.fromIO(() => { self.runList.push(e); }),
-          // Then do the actions
-          task.apSecond(
-            pipe(
-              e.actions,
-              array.map<ty.Action, task.Task<option.Option<void>>[]>(a => [
-                createTDTask(self, a, e),
-                pipe(
-                  // Create a Task<Option<_>> from the pending vote options
-                  () => Promise.resolve(option.fromNullable(self.pendingVoteOptions[a.id])),
-                  // Figure out the voteoptionid that won 
-                  ta => taskOption.chain(ta, flow(
-                    // Sort the voteoptions
-                    array.sort(ord.ordNumber),
-                    // chop into same vote options
-                    array.chop(as => {
-                      const { init, rest } = array.spanLeft((a: number) => eq.eqNumber.equals(a, as[0]))(as)
-                      return [init, rest];
-                    }),
-                    // convert array of votes to [vote, count] tuple
-                    array.map(arr => [arr[0], arr.length] as [number, number]),
-                    // convert to nonemptyarray
-                    nonEmptyArray.fromArray,
-                    // grab the max based on the second tuple element
-                    option.map(nonEmptyArray.max(ord.ord.contramap(ord.ordNumber, e => e[1]))),
-                    // grab the voteoption id of the tuple
-                    option.map(tuple.fst),
-                    // Create task
-                    task.of
-                  )),
-                  task.chain(option.fold(
-                    () => pipe(
-                      option.fromNullable(a.voteOptions),
-                      option.fold<VoteOption[], task.Task<option.Option<VoteOptionId>>>(
-                        () => task.of<option.Option<number>>(option.none),
-                        vo => pipe(
-                          task.fromIO(rand.randomInt(0, vo.length - 1)),
-                          task.map(n => pipe(
-                            option.fromNullable(vo[n]),
-                            option.map(vo => vo.id))
-                          ),
-                        )
-                      )
-                    ),
-                    n => task.of(option.some(n))
-                  )),
-                  // Set chosenVoteOptions[winningVoteOptionId] to winningVoteOptionId
-                  t => taskOption.ap(taskOption.of(r => { Vue.set(self.chosenVoteOptions, r, r); }), t),
-                  task.delay(e.duration || 0)
-                )
-              ]),
-              array.flatten,
-              tparallel,
-              // Wait out the delay
-              task.delay(e.delay || 0),
-              task.chain(() =>
-                pipe(
-                  // Grab the triggered events
-                  task.fromIO(() => option.fromNullable(set.fromArray(eqNumber)(e.triggers))),
-                  // If there are none, create an empty set
-                  task.map(option.getOrElse(constant(set.empty as Set<number>))),
-                  // filter out any events we haven't fetched
-                  task.map(set.filterMap(eqActionEvent)(id => option.fromNullable(eventStore.events[id]))),
-                  // run the events in sequence
-                  task.chain(flow(Run.runEvents(self), tparallel)),
-                )),
-            ))),
+          eventPrepareTask(self, e),
+          // Run start task in parallel to prep task
+          task.apSecond(pipe(
+            eventStartTask(self, e),
+            task.delay(e.delay || 0)
+          )),
+          // Run end task after start task
+          task.chain(() => pipe(
+            eventEndTask(self, e),
+            task.delay(e.duration || 0)
+          )),
+        )
       ])),
     )
 
-  static sendToTD: (self: Run, location: string, filePath: string | undefined) => void =
-    (self, location, filePath) =>
-      socket.send(JSON.stringify({ location, filePath }))
+  static sendToTD: (self: Run, zone: string, location: string, filePath: string | undefined, voteOptions: VoteOption[] | undefined, voteText: string | undefined) => void =
+    (self, zone, location, filePath, voteOptions, voteText) =>
+      socket.send(JSON.stringify({ zone, location, filePath, voteOptions, voteText }))
 
   // List of events that have run. Used for Debugging purposes.
-  public runList: ActionEvent[] = [];
+  public runList: ty.ViewEvent[] = [];
   public chosenVoteOptions: { [id: number]: number } = {};
   public pendingVoteOptions: { [id: number]: Array<number> } = {};
 

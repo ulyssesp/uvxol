@@ -1,5 +1,5 @@
 <template>
-  <v-container>
+  <v-container v-on:keyup.enter="submit">
     <v-row>
       <div :v-bind:err="err">{{ err }}</div>
     </v-row>

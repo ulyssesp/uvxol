@@ -45,7 +45,7 @@
             </v-dialog>
           </v-col>
           <v-col class="flex-grow-0 flex-shrink-1" cols="1">
-            <v-dialog v-model="dialog">
+            <v-dialog v-model="dialog" @click:outside="closeDialog">
               <template v-slot:activator="{ on }">
                 <v-btn small color="primary" dark class="mb-2" v-on="on">New</v-btn>
               </template>
@@ -69,6 +69,7 @@
       class="elevation-1"
       :search="search"
       v-on:current-items="changeCurrentActions"
+      @click:row="item => editAction(item.id)"
     >
       <template v-slot:item.action="{ item }">
         <v-icon small @click="editAction(item.id)">mdi-pencil</v-icon>
@@ -80,7 +81,7 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from "vue-property-decorator";
-import { Action, VoteOption } from "../types";
+import { Action, VoteOption, ActionType, isVoteAction } from "../types";
 import { array } from "fp-ts";
 import actionStore from "../store/modules/actions";
 import CreateAction from "./CreateAction.vue";
@@ -89,28 +90,29 @@ import CreateAction from "./CreateAction.vue";
   components: { CreateAction },
 })
 export default class ActionsList extends Vue {
-  @Prop({ required: true }) readonly actions!: Action[];
+  @Prop({ required: true }) readonly actions!: Action<ActionType>[];
   @Prop({ required: true }) readonly voteOptions!: VoteOption[];
   @Prop({}) err!: string;
   dialog = false;
   deleteDialog = false;
   editingId: number | undefined = undefined;
-  editingAction: Action | undefined = undefined;
-  currentActions: Action[] = [];
+  editingAction: Action<ActionType> | undefined = undefined;
+  currentActions: Action<ActionType>[] = [];
   // Used above for filtering the list
   // TODO: also filter items
   search = "";
   get flatactions() {
-    return array.map((a: Action) => ({
+    return array.map((a: Action<ActionType>) => ({
       ...a,
       voteOptions: array
-        .map((vo: VoteOption) => vo.name)(a.voteOptions || [])
+        .map((vo: VoteOption) => vo.name)(isVoteAction(a) ? a.voteOptions : [])
         .join(),
     }))(this.actions);
   }
   headers = [
     { text: "name", value: "name" },
     { text: "type", value: "type" },
+    { text: "zone", value: "zone" },
     { text: "location", value: "location" },
     { text: "file", value: "filePath" },
     { text: "voteOptions", value: "voteOptions" },
@@ -131,6 +133,7 @@ export default class ActionsList extends Vue {
   }
   // Remember to Reset the dialog!
   closeDialog() {
+    console.log("hmm");
     this.dialog = false;
     this.editingAction = undefined;
     this.editingId = undefined;
@@ -139,7 +142,6 @@ export default class ActionsList extends Vue {
     this.$emit("data-change");
   }
   changeCurrentActions(v: any[]) {
-    console.log("Changing? " + v.length);
     this.currentActions = v;
   }
   deleteVisibleDialog() {

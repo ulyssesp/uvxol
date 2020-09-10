@@ -16,11 +16,11 @@
           <Event v-bind:event="event" class="pa-1 flex-grow-1"></Event>
         </v-row>
       </v-col>
-      <v-col v-for="(location, i) in actionLogByLocation" :key="i" cols="2">
+      <v-col v-for="(zone, i) in actionLogByZone" :key="i" cols="2">
         <v-row>
-          <v-subheader>{{ location[0] }}</v-subheader>
+          <v-subheader>{{ zone[0] }}</v-subheader>
         </v-row>
-        <v-row v-for="(action, i) in location[1]" :key="i" class="mb-3">
+        <v-row v-for="(action, i) in zone[1]" :key="i" class="mb-3">
           <ActionC v-bind:action="action" class="ms-2 pa-1 flex-grow-1"></ActionC>
         </v-row>
       </v-col>
@@ -30,7 +30,14 @@
 
 <script lang="ts">
 import { Component, Prop, Vue, Watch } from "vue-property-decorator";
-import { ActionEvent, Action, VoteOption } from "../types";
+import {
+  ActionEvent,
+  Action,
+  VoteOption,
+  ActionType,
+  ViewAction,
+  ViewEvent,
+} from "../types";
 import { array, option, show } from "fp-ts";
 import { pipe } from "fp-ts/lib/pipeable";
 import { constant } from "fp-ts/lib/function";
@@ -51,15 +58,19 @@ import { logid, logval } from "../utils/fp-utils";
 })
 export default class EventsList extends Vue {
   private err = "";
-  get actionLogByLocation() {
+  get actionLogByZone() {
     return pipe(
       this.events,
-      array.chain((e) => e.actions),
+      array.chain((e: ViewEvent) => e.actions),
       na.fromArray,
-      option.map(na.groupBy((a) => a.location.toLowerCase())),
+      option.map(
+        na.groupBy((a: ViewAction<ActionType>) => a.zone.toLowerCase())
+      ),
       option.map(r.toArray),
       option.map(array.reverse),
-      option.getOrElse(constant([] as [string, na.NonEmptyArray<Action>][]))
+      option.getOrElse(
+        constant([] as [string, na.NonEmptyArray<ViewAction<ActionType>>][])
+      )
     );
   }
   get log() {

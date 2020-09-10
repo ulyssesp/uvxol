@@ -1,6 +1,4 @@
 type ArrayType<A> = A extends Array<infer U> ? U : never;
-type ActionArrayType = ArrayType<number>;
-type Hmm = Array<Action> extends Array<any> ? "haha" : never;
 type RequireId<T> =
     Exclude<{ [K in keyof T]:
         ArrayType<T[K]> extends never
@@ -9,28 +7,51 @@ type RequireId<T> =
     }[keyof T], undefined>;
 
 export type ServerType<T> = Omit<T, RequireId<T>> & { [K in RequireId<T>]: number[] | Extract<T[RequireId<T>], undefined> };
-export type ServerAction<T extends Action | EditableAction> =
+export type ServerAction<T extends Action<ActionType> | EditableAction<ActionType>> =
     Omit<ServerType<T>, "type"> & { type: number };
 
 export type ActionId = number;
 
-export type Action = { id: ActionId } & EditableAction;
+export type Action<T extends ActionType> = { id: ActionId } & EditableAction<T>;
 
-export type EditableAction = {
-    type: string;
+export type EditableAction<T extends ActionType> = {
+    type: T;
     name: string;
+    zone: string;
     location: string;
-    filePath?: string;
-    voteOptions?: VoteOption[];
-    text?: string;
+} & (T extends "vote" ? VoteActionFields : FileActionFields);
+
+type VoteActionFields = {
+    voteOptions: VoteOption[];
+    text: string;
 }
 
-export function isServerAction(a: ServerType<EditableAction> | ServerType<Action>): a is ServerType<Action> {
-    return (a as Action).id !== undefined;
+type FileActionFields = {
+    filePath: string;
 }
 
-export const ActionTypesMap: { [type: string]: number } = { audio: 0, video: 1, vote: 2 };
-export const TypesActionMap: { [type: number]: string } = { 0: 'audio', 1: 'video', 2: 'vote' };
+export type ViewAction<T extends ActionType> = EditableAction<T> & { active: boolean };
+export type ViewEvent = Omit<ActionEvent, "actions"> & { active: boolean, actions: ViewAction<ActionType>[] };
+
+export function isServerAction<T extends ActionType>(a: ServerType<EditableAction<T>> | ServerType<Action<T>>): a is ServerType<Action<T>> {
+    return (a as Action<T>).id !== undefined;
+}
+
+export function isVoteAction(a: Action<ActionType>): a is Action<"vote"> {
+    return a.type === "vote";
+}
+
+export function isNotVoteAction(a: Action<ActionType>): a is Action<Exclude<ActionType, "vote">> {
+    return a.type === "vote";
+}
+
+export function isVoteEditableAction(a: EditableAction<ActionType>): a is EditableAction<"vote"> {
+    return a.type === "vote";
+}
+
+export type ActionType = 'audio' | 'video' | 'vote';
+export const ActionTypesMap: { [K in ActionType]: number } = { audio: 0, video: 1, vote: 2 };
+export const TypesActionMap: { [type: number]: ActionType } = { 0: 'audio', 1: 'video', 2: 'vote' };
 
 export type EventId = number;
 
@@ -41,7 +62,7 @@ export interface ActionEvent {
     delay?: number | null;
     dependencies: VoteOption[];
     preventions: VoteOption[];
-    actions: Action[];
+    actions: Action<ActionType>[];
     triggers: EventId[];
 }
 

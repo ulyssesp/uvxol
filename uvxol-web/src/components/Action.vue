@@ -19,12 +19,12 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from "vue-property-decorator";
-import { Action } from "../types";
+import { Action, ActionType } from "../types";
 import runStore from "@/store/modules/run";
 
 @Component
 export default class ActionView extends Vue {
-  @Prop({ required: true }) action!: Action;
+  @Prop({ required: true }) action!: Action<ActionType>;
   async chooseOption(id: number) {
     runStore.chooseVote([id, this.action.id]);
   }

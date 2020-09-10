@@ -1,6 +1,6 @@
 import * as api from '../../api/Actions';
 import * as vmod from 'vuex-module-decorators';
-import { Action, VoteOptionId, TypesActionMap, EditableAction, ServerType, isServerAction } from '@/types';
+import { Action, VoteOptionId, TypesActionMap, EditableAction, ServerType, isServerAction, ActionType } from '@/types';
 import { array, task } from 'fp-ts';
 import Vue from 'vue';
 import store from '@/store';
@@ -8,14 +8,14 @@ import { pipe } from 'fp-ts/lib/pipeable';
 
 @vmod.Module({ dynamic: true, name: 'actionStore', store })
 class Actions extends vmod.VuexModule {
-  public actionsDict: { [id: number]: Action } = {};
+  public actionsDict: { [id: number]: Action<ActionType> } = {};
 
   get actionsList() {
     return Object.values(this.actionsDict);
   }
 
   @vmod.Action({ commit: 'addAction', rawError: true })
-  public async createOrUpdateAction(a: ServerType<Action> | ServerType<EditableAction>) {
+  public async createOrUpdateAction(a: ServerType<Action<ActionType>> | ServerType<EditableAction<ActionType>>) {
     return isServerAction(a) ?
       api.putAction(a) :
       api.postAction(a);
@@ -32,12 +32,12 @@ class Actions extends vmod.VuexModule {
   }
 
   @vmod.Mutation
-  public async addActions(as: Action[]) {
+  public async addActions(as: Action<ActionType>[]) {
     return pipe(as, array.map(a => async () => { Vue.set(this.actionsDict, a.id, a) }), array.array.sequence(task.task))();
   }
 
   @vmod.Mutation
-  public async addAction(a: Action) {
+  public async addAction(a: Action<ActionType>) {
     Vue.set(this.actionsDict, a.id, a)
   }
 

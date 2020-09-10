@@ -21,6 +21,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         }
     } else if (req.method === "POST") {
         body = await db.insertAction(
+            req.body.zone,
             req.body.location,
             req.body.type,
             req.body.name,
@@ -33,6 +34,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     } else if (req.method === "PUT") {
         body = await db.updateAction(
             req.body.id,
+            req.body.zone,
             req.body.location,
             req.body.type,
             req.body.name,

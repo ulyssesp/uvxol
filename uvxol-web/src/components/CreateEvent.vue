@@ -1,5 +1,5 @@
 <template>
-  <v-card :loading="loading">
+  <v-card :loading="loading" v-on:keyup.enter="submit">
     <v-card-title>
       Create Event
       <v-subtitle>
@@ -154,7 +154,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from "vue-property-decorator";
-import { ActionEvent, Action, VoteOption } from "../types";
+import { ActionEvent, Action, VoteOption, ActionType } from "../types";
 import { array } from "fp-ts";
 import Events from "../store/modules/events";
 import { getModule } from "vuex-module-decorators";
@@ -187,7 +187,7 @@ const mapEvent = (val: ActionEvent | undefined) =>
   components: {},
 })
 export default class CreateEvent extends Vue {
-  @Prop({ required: true }) readonly actions!: Action[];
+  @Prop({ required: true }) readonly actions!: Action<ActionType>[];
   @Prop({ required: true }) readonly events!: ActionEvent[];
   @Prop({ required: true }) readonly voteOptions!: VoteOption[];
   @Prop() readonly updateId!: any | undefined;

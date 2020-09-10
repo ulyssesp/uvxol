@@ -1,5 +1,5 @@
 <template>
-  <v-card :loading="loading">
+  <v-card :loading="loading" v-on:keyup.enter="submit">
     <v-card-title>
       Create Action
       <v-subtitle>
@@ -18,9 +18,16 @@
           </v-col>
           <v-col cols="4">
             <v-text-field
+              v-model="editedAction.zone"
+              label="Zone"
+              placeholder="where this action will play"
+            ></v-text-field>
+          </v-col>
+          <v-col cols="4">
+            <v-text-field
               v-model="editedAction.location"
               label="Location"
-              placeholder="where this action will play"
+              placeholder="the location this will play"
             ></v-text-field>
           </v-col>
           <v-col cols="4">
@@ -87,34 +94,31 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from "vue-property-decorator";
-import { Action, ActionTypesMap, VoteOption, EditableAction } from "../types";
+import {
+  Action,
+  ActionTypesMap,
+  VoteOption,
+  EditableAction,
+  ActionType,
+  isVoteAction,
+} from "../types";
 import actionStore from "../store/modules/actions";
 
-const defaultAction = {
+const defaultAction: EditableAction<"video"> = {
   name: "",
-  location: "FILM",
-  type: "",
-  filePath: undefined,
-  voteOptions: undefined,
-  text: undefined,
+  zone: "FILM",
+  location: "CONTENT",
+  type: "video",
+  filePath: "",
 };
 
-const mapAction: (
-  val: Action | undefined
-) => Omit<EditableAction, "voteOptions"> & {
-  voteOptions: number[] | undefined;
-} = (val) =>
+const mapAction = (val: Action<ActionType> | undefined) =>
   val
-    ? {
-        name: val.name,
-        location: val.location,
-        type: val.type,
-        filePath: val.filePath,
-        voteOptions: val.voteOptions
+    ? Object.assign({}, val, {
+        voteOptions: isVoteAction(val)
           ? val.voteOptions.map((vo) => vo.id)
           : undefined,
-        text: val.text,
-      }
+      })
     : defaultAction;
 
 @Component({
@@ -131,7 +135,7 @@ export default class CreateAction extends Vue {
   editedAction = mapAction(this.updateAction);
   editedId = this.updateId;
   @Watch("updateAction")
-  onEditAction(val: Action) {
+  onEditAction(val: Action<ActionType>) {
     this.editedAction = mapAction(val);
   }
   @Watch("updateId")
