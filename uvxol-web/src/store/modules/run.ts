@@ -24,24 +24,27 @@ import * as chn from 'fp-ts/lib/Chain';
 import { getFilterableComposition } from 'fp-ts/lib/Filterable';
 import Socket from './socket';
 import { eqNumber } from 'fp-ts/lib/Eq';
-
-// TODO: Should probably move this somewhere
-const socket = new Socket();
+import { foldLeft } from 'fp-ts/lib/ReadonlyArray';
+import { taskSeq } from 'fp-ts/lib/Task';
+import { IORef } from 'fp-ts/lib/IORef';
+import { io } from 'fp-ts/lib/IO';
 
 const eqActionEvent = eq.eq.contramap(eq.eqNumber, (e: ActionEvent) => e.id);
+const eqViewEvent = eq.eq.contramap(eq.eqNumber, (e: ty.ViewEvent) => e.id);
 const seqT = array.array.sequence(task.task);
 const seqTSeq = array.array.sequence(task.taskSeq);
 const tseq: <A>(ta: task.Task<A>[]) => task.Task<void> =
   ta => fld.traverse_(task.taskSeq, array.array)(ta, task.map(constVoid))
-const tparallel: <A>(ta: task.Task<A>[]) => task.Task<void> =
+const tparallel_: <A>(ta: task.Task<A>[]) => task.Task<void> =
   ta => fld.traverse_(task.task, array.array)(ta, task.map(constVoid))
+
 const checkVoteOptions:
   (chosenVoteOptions: { [id: number]: number }) =>
     (target: boolean) =>
       (checkVoteOptions: VoteOption[]) => boolean[] = chosenVoteOptions => target =>
         array.map((voteOption: VoteOption) => (chosenVoteOptions[voteOption.id] === undefined) === target)
 
-const checkEventShouldRun = (chosenVoteOptions: { [id: number]: number }) => (e: ActionEvent) =>
+const checkEventShouldRun = (chosenVoteOptions: { [id: number]: number }) => (e: ty.ActionEvent) =>
   pipe(
     array.getMonoid<boolean>().concat(
       // Check if chosenVoteOptions contains dependencies
@@ -64,70 +67,68 @@ const taskOption: mo.Monad1<'TaskOption'> = {
   ...ot.getOptionM(task.task)
 }
 
-// Create a task to be run before event
-const eventPrepareTask: (self: Run, e: ty.ActionEvent) => task.Task<void> =
-  (self, e) =>
-    // Push the event into the run list
-    task.fromIO(() => {
-      self.runList.push(
-        Object.assign(e, {
-          active: false,
-          actions: e.actions.map(a =>
-            // Disable UI elements on start
-            Object.assign({ active: false }))
-        }));
-    });
+const actionEventToViewEvent: (e: ty.ActionEvent) => ty.ViewEvent = e =>
+  Object.assign(e, {
+    active: false,
+    actions: e.actions.map(a =>
+      // Disable UI elements on start
+      Object.assign({ active: false }, a))
+  });
 
-// Create a task to be run after delay, but before duration
-const eventStartTask: (self: Run, e: ty.ActionEvent) => task.Task<void> =
+// Create a task to be run before event
+const eventPrepareTask: (self: Run, e: ty.ActionEvent) => task.Task<ty.ViewEvent> =
   (self, e) => pipe(
-    e.actions.map(actionStartTask(self, e)),
-    tparallel,
-    // Set all the actions to active
-    task.apSecond(task.fromIO(() => {
-      self.runList = self.runList.map(event => {
-        const actions = event.actions;
-        const newActions = actions.map(action => Object.assign({}, action, { active: true }));
-        return Object.assign({}, event, { actions: newActions });
-      });
-    }))
+    // Push the event into the run list
+    task.fromIO(() => actionEventToViewEvent(e)),
+    task.chainFirst(e => task.fromIO(() => self.runList.push(e)))
   );
 
 // Create a task to be run after delay, but before duration
-const actionStartTask: (self: Run, e: ty.ActionEvent) => (a: ty.Action<ty.ActionType>) => task.Task<void> =
-  (self, e) => a =>
-    // Send everything to TD
-    task.fromIO(() => Run.sendToTD(
-      self,
-      a.zone,
-      a.location,
-      ty.isNotVoteAction(a) ? a.filePath : undefined,
-      ty.isVoteAction(a) ? a.voteOptions : undefined,
-      ty.isVoteAction(a) ? a.text : undefined
-    ));
+// The task's output is a new ViewEvent with everything active
+const eventStartTask: (self: Run) => (e: ty.ViewEvent) => task.Task<ty.ViewEvent> =
+  self => e => pipe(
+    // Run the actions
+    e.actions,
+    array.map(actionStartTask(self)),
+    seqT,
+    // Immutably set the view event and its actions to active
+    task.map(actions => Object.assign(
+      {},
+      e,
+      { active: true, actions }
+    )),
+  );
+
+// Create a task to be run after delay, but before duration
+// The task's output is the active event
+const actionStartTask: (self: Run) => (a: ty.ViewAction<ty.ActionType>) => task.Task<ty.ViewAction<ty.ActionType>> =
+  self => a => pipe(
+    Object.assign({}, a, { active: true }),
+    task.of,
+    task.chainFirst(Run.sendToTD(self))
+  );
 
 // Create a task to be run after delay, and after duration
-const eventEndTask: (self: Run, e: ty.ActionEvent) => task.Task<void> =
-  (self, e) => pipe(
-    e.actions.map(actionEndTask(self, e)),
-    tparallel,
-    // Set all the actions to inactive
-    task.apSecond(task.fromIO(() => {
-      self.runList = self.runList.map(event => {
-        const actions = event.actions;
-        const newActions = actions.map(action => Object.assign({}, action, { active: false }));
-        return Object.assign({}, event, { actions: newActions });
-      });
-    }))
-  );
+const eventEndTask: (self: Run) => (e: ty.ViewEvent) => task.Task<ty.ViewEvent> =
+  self => e => {
+    e.active = false
+    return pipe(
+      e.actions.map(actionEndTask(self, e)),
+      tparallel_,
+      task.chain(() => task.of(e))
+    )
+  }
 
 // Create a task to be run after delay and duration
-const actionEndTask: (self: Run, e: ty.ActionEvent) => (a: ty.Action<ty.ActionType>) => task.Task<void> =
-  (self, e) => a =>
-    ty.isVoteAction(a) ?
-      actionEndVote(self, e)(a) : task.fromIO(() => undefined) /* Remove both vote options and video from screen and count votes */
+const actionEndTask: (self: Run, e: ty.ViewEvent) => (a: ty.ViewAction<ty.ActionType>) => task.Task<void> =
+  (self, e) => a => {
+    a.active = false
+    // Tally the vote
+    return ty.isVoteAction(a) ?
+      actionEndVote(self, e)(a) : task.fromIO(() => undefined)
+  };
 
-const actionEndVote: (self: Run, e: ty.ActionEvent) => (a: ty.Action<"vote">) => task.Task<void> =
+const actionEndVote: (self: Run, e: ty.ViewEvent) => (a: ty.ViewAction<"vote">) => task.Task<void> =
   (self, e) => a =>
     pipe(
       // Create a Task<Option<_>> from the pending vote options
@@ -164,7 +165,6 @@ const actionEndVote: (self: Run, e: ty.ActionEvent) => (a: ty.Action<"vote">) =>
       )),
       // Set chosenVoteOptions[winningVoteOptionId] to winningVoteOptionId
       chosen => task.ap(chosen)(task.of((r: number) => { Vue.set(self.chosenVoteOptions, r, r); })),
-      task.delay(e.duration || 0)
     )
 
 
@@ -175,7 +175,7 @@ class Run extends VuexModule {
     eventStore.eventsList.filter(e => eventStore.eventsByTrigger[e.id] == null)
 
   // Generate all tasks required to run these events.
-  static runEvents: (self: Run) => (es: Set<ActionEvent>) => task.Task<void>[] = self =>
+  static runEvents: (self: Run) => (es: Set<ty.ActionEvent>) => task.Task<void>[] = self =>
     flow(
       // Convert set to array ordering by duration
       set.toArray(ord.ord.contramap(ord.ordNumber, e => e.duration)),
@@ -184,40 +184,59 @@ class Run extends VuexModule {
     )
 
   // Generate a task to run this event. This task includes data fetching, triggering other events, etc.
-  static runEvent: (self: Run) => (e: ActionEvent) => option.Option<task.Task<void>> = self =>
+  static runEvent: (self: Run) => (e: ty.ActionEvent) => option.Option<task.Task<void>> = self =>
     flow(
       // Convert the (possibly null) ActionEvent to an Option
       option.fromNullable,
       // If the event shouldn't be run, return None
       option.chainFirst(checkEventShouldRun(self.chosenVoteOptions)),
-      option.map(e => tparallel([
+      option.map(e => tparallel_([
         // Fetch events for the trigger id
         () => eventStore.getEventsForTrigger(e.id).then(constVoid),
         // Run the events
         pipe(
           eventPrepareTask(self, e),
           // Run start task in parallel to prep task
-          task.apSecond(pipe(
-            eventStartTask(self, e),
+          task.chainFirst(flow(
+            eventStartTask(self),
+            task.chainIOK(
+              ve => () => {
+                self.runList.splice(self.runList.findIndex(re => ve.id === re.id), 1, ve)
+              }
+            ),
             task.delay(e.delay || 0)
           )),
           // Run end task after start task
-          task.chain(() => pipe(
-            eventEndTask(self, e),
+          task.chain(flow(
+            eventEndTask(self),
+            task.chainIOK(ve => () => {
+              self.runList.splice(self.runList.findIndex(re => ve.id === re.id), 1, ve)
+            }),
             task.delay(e.duration || 0)
           )),
         )
       ])),
     )
 
-  static sendToTD: (self: Run, zone: string, location: string, filePath: string | undefined, voteOptions: VoteOption[] | undefined, voteText: string | undefined) => void =
-    (self, zone, location, filePath, voteOptions, voteText) =>
-      socket.send(JSON.stringify({ zone, location, filePath, voteOptions, voteText }))
+  // Send an action to TD
+  static sendToTD: (self: Run) => (action: ty.ViewAction<ty.ActionType>) => task.Task<void> =
+    self => action => task.fromIO(() =>
+      self.socket.send(JSON.stringify({
+        zone: action.zone,
+        location: action.location,
+        active: action.active,
+        filePath: ty.isNotVoteAction(action) ? action.filePath : undefined,
+        voteOptions: ty.isVoteAction(action) ? action.voteOptions : undefined,
+        voteText: ty.isVoteAction(action) ? action.text : undefined
+      }))
+    );
+
 
   // List of events that have run. Used for Debugging purposes.
   public runList: ty.ViewEvent[] = [];
   public chosenVoteOptions: { [id: number]: number } = {};
   public pendingVoteOptions: { [id: number]: Array<number> } = {};
+  private socket = new Socket();
 
   get log() {
     return this.runList;

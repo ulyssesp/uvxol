@@ -1,6 +1,13 @@
 <template>
-  <v-card>
-    <v-card-title class="title" v-text="action.name"></v-card-title>
+  <v-card v-bind:disabled="!action.active">
+    <v-card-title class="title text-no-wrap">
+      <v-tooltip top>
+        <template v-slot:activator="{ on, attrs }">
+          <span v-bind="attrs" v-on="on">{{ action.name }}</span>
+        </template>
+        <span>{{ action.name }}</span>
+      </v-tooltip>
+    </v-card-title>
     <v-card-text>
       <v-chip-group multiple>
         <v-chip small>{{ action.type }}</v-chip>
@@ -19,12 +26,12 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from "vue-property-decorator";
-import { Action, ActionType } from "../types";
+import { Action, ActionType, ViewAction } from "../types";
 import runStore from "@/store/modules/run";
 
 @Component
 export default class ActionView extends Vue {
-  @Prop({ required: true }) action!: Action<ActionType>;
+  @Prop({ required: true }) action!: ViewAction<ActionType>;
   async chooseOption(id: number) {
     runStore.chooseVote([id, this.action.id]);
   }

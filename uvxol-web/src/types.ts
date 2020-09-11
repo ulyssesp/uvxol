@@ -30,19 +30,19 @@ type FileActionFields = {
     filePath: string;
 }
 
-export type ViewAction<T extends ActionType> = EditableAction<T> & { active: boolean };
+export type ViewAction<T extends ActionType> = Action<T> & { active: boolean };
 export type ViewEvent = Omit<ActionEvent, "actions"> & { active: boolean, actions: ViewAction<ActionType>[] };
 
 export function isServerAction<T extends ActionType>(a: ServerType<EditableAction<T>> | ServerType<Action<T>>): a is ServerType<Action<T>> {
     return (a as Action<T>).id !== undefined;
 }
 
-export function isVoteAction(a: Action<ActionType>): a is Action<"vote"> {
+export function isVoteAction(a: EditableAction<ActionType>): a is EditableAction<"vote"> {
     return a.type === "vote";
 }
 
-export function isNotVoteAction(a: Action<ActionType>): a is Action<Exclude<ActionType, "vote">> {
-    return a.type === "vote";
+export function isNotVoteAction(a: EditableAction<ActionType>): a is EditableAction<Exclude<ActionType, "vote">> {
+    return a.type !== "vote";
 }
 
 export function isVoteEditableAction(a: EditableAction<ActionType>): a is EditableAction<"vote"> {
