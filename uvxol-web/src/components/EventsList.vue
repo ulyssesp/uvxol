@@ -70,10 +70,11 @@
       class="elevation-1"
       :search="search"
       @current-items="changeCurrentItems"
-      @click:row="item => editEvent(item.id)"
+      @click:row.self="item => editEvent(item.id)"
     >
       <template v-slot:item.action="{ item }">
         <v-icon small @click="editEvent(item.id)">mdi-pencil</v-icon>
+        <v-icon small @click="duplicateEvent(item.id)">mdi-content-copy</v-icon>
         <v-icon small @click="deleteEvent(item.id)">mdi-delete</v-icon>
       </template>
     </v-data-table>
@@ -82,13 +83,39 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from "vue-property-decorator";
-import { ActionEvent, Action, VoteOption, ActionType } from "../types";
+import {
+  ActionEvent,
+  Action,
+  VoteOption,
+  ActionType,
+  EditableEvent,
+} from "../types";
 import { array, option } from "fp-ts";
 import { pipe } from "fp-ts/lib/pipeable";
 import Events from "../store/modules/events";
 import { getModule } from "vuex-module-decorators";
 import eventStore from "../store/modules/events";
 import CreateEvent from "./CreateEvent.vue";
+
+const defaultEvent: EditableEvent = {
+  name: "",
+  duration: 4000,
+  delay: 0,
+  actions: [] as number[],
+  triggers: [] as number[],
+  dependencies: [] as number[],
+  preventions: [] as number[],
+};
+
+const mapEvent = (val: ActionEvent): EditableEvent => ({
+  name: val.name,
+  duration: val.duration,
+  delay: val.delay || 0,
+  triggers: val.triggers,
+  actions: val.actions.map((d) => d.id),
+  dependencies: val.dependencies.map((d) => d.id),
+  preventions: val.preventions.map((p) => p.id),
+});
 
 @Component({
   components: { CreateEvent },
@@ -101,7 +128,7 @@ export default class EventsList extends Vue {
   dialog = false;
   search = "";
   editingId: number | undefined = undefined;
-  editingEvent: ActionEvent | undefined = undefined;
+  editingEvent: EditableEvent = defaultEvent;
   currentItems: ActionEvent[] = [];
   deleteDialog = false;
   get flatevents() {
@@ -138,7 +165,7 @@ export default class EventsList extends Vue {
   closeDialog() {
     this.dialog = false;
     this.editingId = undefined;
-    this.editingEvent = undefined;
+    this.editingEvent = defaultEvent;
   }
   deleteEvent(id: number) {
     eventStore
@@ -148,8 +175,23 @@ export default class EventsList extends Vue {
   }
   editEvent(id: number) {
     this.editingId = id;
-    this.editingEvent = eventStore.events[id];
+    this.editingEvent = mapEvent(eventStore.events[id]);
     this.dialog = true;
+  }
+  duplicateEvent(id: number) {
+    eventStore
+      .createOrUpdateEvent(
+        Object.assign({}, eventStore.events[id], { id: undefined })
+      )
+      .then(() => (this.err = "success"))
+      .then(() => this.$emit("data-change"))
+      .catch((err: any) => {
+        try {
+          this.err = err.error.err.originalError.info.message;
+        } catch {
+          this.err = err;
+        }
+      });
   }
   refresh() {
     this.$emit("data-change");

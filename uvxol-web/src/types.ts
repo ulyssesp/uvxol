@@ -59,12 +59,19 @@ export interface ActionEvent {
     id: EventId;
     name: string;
     duration: number;
-    delay?: number | null;
+    delay: number;
     dependencies: VoteOption[];
     preventions: VoteOption[];
     actions: Action<ActionType>[];
     triggers: EventId[];
 }
+
+export type EditableEvent = Omit<ActionEvent, "id" | "actions" | "triggers" | "dependencies" | "preventions"> & {
+    actions: number[],
+    triggers: number[],
+    dependencies: number[],
+    preventions: number[]
+};
 
 export type VoteOptionId = number;
 

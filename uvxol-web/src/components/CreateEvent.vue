@@ -154,34 +154,17 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from "vue-property-decorator";
-import { ActionEvent, Action, VoteOption, ActionType } from "../types";
+import {
+  ActionEvent,
+  Action,
+  VoteOption,
+  ActionType,
+  EditableEvent,
+} from "../types";
 import { array } from "fp-ts";
 import Events from "../store/modules/events";
 import { getModule } from "vuex-module-decorators";
 import eventStore from "../store/modules/events";
-
-const defaultEvent = {
-  name: "",
-  duration: 4000,
-  delay: 0,
-  actions: [] as number[],
-  triggers: [] as number[],
-  dependencies: [] as number[],
-  preventions: [] as number[],
-};
-
-const mapEvent = (val: ActionEvent | undefined) =>
-  val
-    ? {
-        name: val.name,
-        duration: val.duration,
-        delay: val.delay || 0,
-        triggers: val.triggers,
-        actions: val.actions.map((d) => d.id),
-        dependencies: val.dependencies.map((d) => d.id),
-        preventions: val.preventions.map((p) => p.id),
-      }
-    : defaultEvent;
 
 @Component({
   components: {},
@@ -191,18 +174,18 @@ export default class CreateEvent extends Vue {
   @Prop({ required: true }) readonly events!: ActionEvent[];
   @Prop({ required: true }) readonly voteOptions!: VoteOption[];
   @Prop() readonly updateId!: any | undefined;
-  @Prop() readonly updateEvent!: any | undefined;
+  @Prop() readonly updateEvent!: EditableEvent;
   triggersInput = "";
   actionsInput = "";
   dependsInput = "";
   preventsInput = "";
   err = "";
   loading = false;
-  editedEvent = mapEvent(this.updateEvent);
+  editedEvent = this.updateEvent;
   editedId = this.updateId;
   @Watch("updateEvent")
-  onEditEvent(val: ActionEvent) {
-    this.editedEvent = mapEvent(val);
+  onEditEvent(val: EditableEvent) {
+    this.editedEvent = val;
   }
   @Watch("updateId")
   onEditId(val: number) {
@@ -227,8 +210,6 @@ export default class CreateEvent extends Vue {
       });
   }
   close() {
-    this.editedId = undefined;
-    this.editedEvent = defaultEvent;
     this.$emit("done");
   }
 }

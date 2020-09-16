@@ -104,39 +104,22 @@ import {
 } from "../types";
 import actionStore from "../store/modules/actions";
 
-const defaultAction: EditableAction<"video"> = {
-  name: "",
-  zone: "FILM",
-  location: "CONTENT",
-  type: "video",
-  filePath: "",
-};
-
-const mapAction = (val: Action<ActionType> | undefined) =>
-  val
-    ? Object.assign({}, val, {
-        voteOptions: isVoteAction(val)
-          ? val.voteOptions.map((vo) => vo.id)
-          : undefined,
-      })
-    : defaultAction;
-
 @Component({
   components: {},
 })
 export default class CreateAction extends Vue {
   @Prop({ required: true }) voteOptions!: VoteOption[];
-  @Prop() readonly updateId!: any | undefined;
-  @Prop() readonly updateAction!: any | undefined;
+  @Prop() readonly updateId!: any;
+  @Prop() readonly updateAction!: any;
   actionTypes = ["audio", "video", "vote"];
   err = "";
   type = "video";
   loading = false;
-  editedAction = mapAction(this.updateAction);
+  editedAction = Object.assign({}, this.updateAction);
   editedId = this.updateId;
   @Watch("updateAction")
   onEditAction(val: Action<ActionType>) {
-    this.editedAction = mapAction(val);
+    this.editedAction = Object.assign({}, val);
   }
   @Watch("updateId")
   onEditId(val: number) {
@@ -161,8 +144,6 @@ export default class CreateAction extends Vue {
       });
   }
   close() {
-    this.editedId = undefined;
-    this.editedAction = defaultAction;
     this.$emit("done");
   }
 }

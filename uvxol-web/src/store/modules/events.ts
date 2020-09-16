@@ -3,9 +3,9 @@ import Vue from 'vue';
 import { Module, VuexModule, Action, Mutation, MutationAction, getModule } from 'vuex-module-decorators';
 import { ActionEvent, EventId, isVoteAction } from '@/types';
 import store from '@/store';
-import { array, task, set, eq } from 'fp-ts';
+import { array, task, set, eq, foldable } from 'fp-ts';
 import { pipe } from 'fp-ts/lib/pipeable';
-import { constant, flow, identity } from 'fp-ts/lib/function';
+import { constant, constVoid, flow, identity } from 'fp-ts/lib/function';
 import voteOptionStore from './voteoptions';
 
 import { logid, logval } from '../../utils/fp-utils';
@@ -35,7 +35,7 @@ class Events extends VuexModule {
             Vue.set(self.eventsByTrigger, triggerId,
               set.union(eq.eqNumber)(self.eventsByTrigger[triggerId] || set.empty, set.singleton(e.id)))
           }),
-          array.array.sequence(task.task))),
+          arr => foldable.traverse_(task.task, array.array)(arr, task.map(constVoid)))),
       t => t()
     );
 

@@ -69,7 +69,7 @@ export default class EventsList extends Vue {
       option.map(r.toArray),
       option.map(array.reverse),
       option.getOrElse(
-        constant([] as [string, na.NonEmptyArray<ViewAction<ActionType>>][])
+        constant([] as [string, Array<ViewAction<ActionType>>][])
       )
     );
   }

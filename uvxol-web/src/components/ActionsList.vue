@@ -81,10 +81,33 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from "vue-property-decorator";
-import { Action, VoteOption, ActionType, isVoteAction } from "../types";
+import {
+  Action,
+  VoteOption,
+  ActionType,
+  isVoteAction,
+  EditableAction,
+} from "../types";
 import { array } from "fp-ts";
 import actionStore from "../store/modules/actions";
 import CreateAction from "./CreateAction.vue";
+
+const defaultAction: EditableAction<"video"> = {
+  name: "",
+  zone: "FILM",
+  location: "CONTENT",
+  type: "video",
+  filePath: "",
+};
+
+const mapAction = (val: Action<ActionType> | undefined) =>
+  val
+    ? Object.assign({}, val, {
+        voteOptions: isVoteAction(val)
+          ? val.voteOptions.map((vo) => vo.id)
+          : undefined,
+      })
+    : defaultAction;
 
 @Component({
   components: { CreateAction },
@@ -96,7 +119,7 @@ export default class ActionsList extends Vue {
   dialog = false;
   deleteDialog = false;
   editingId: number | undefined = undefined;
-  editingAction: Action<ActionType> | undefined = undefined;
+  editingAction: EditableAction<ActionType> = defaultAction;
   currentActions: Action<ActionType>[] = [];
   // Used above for filtering the list
   // TODO: also filter items
@@ -134,7 +157,7 @@ export default class ActionsList extends Vue {
   // Remember to Reset the dialog!
   closeDialog() {
     this.dialog = false;
-    this.editingAction = undefined;
+    this.editingAction = defaultAction;
     this.editingId = undefined;
   }
   refresh() {
