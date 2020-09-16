@@ -12,17 +12,11 @@
 # return the response dictionary
 
 import td
-import urllib.parse as urlparse
+import json
 from urllib.parse import parse_qs
 
 def onHTTPRequest(webServerDAT, request, response):
-  playingFiles = op("playing_files")
-
-  try:
-    playingFiles[request['pars']['location'], 1] = 'video/' + request['pars']['filePath']
-  except:
-    print(request['pars']['location'])
-    print(request['pars']['filePath'])
+  playFile(request['pars']['zone'], request['pars']['location'], request['pars']['filePath'])
 
   response['statusCode'] = 200 # OK
   response['statusReason'] = 'OK'
@@ -31,11 +25,14 @@ def onHTTPRequest(webServerDAT, request, response):
   return response
 
 def onWebSocketOpen(webServerDAT, client):
-  print(client)
 	return
 
 def onWebSocketReceiveText(webServerDAT, client, data):
-	webServerDAT.webSocketSendText(client, data)
+	data = json.loads(data)
+	if data['action'] == "restart":
+		op("playing_files").clear()
+	elif 'filePath' in data:
+		playFile(data['zone'], data['location'], data['filePath'], data['active'])
 	return
 
 def onWebSocketReceiveBinary(webServerDAT, client, data):
@@ -47,4 +44,14 @@ def onServerStart(webServerDAT):
 
 def onServerStop(webServerDAT):
 	return
-	
+
+def playFile(zone, location, filePath, active):
+  playingFiles = op("playing_files")
+  zone = zone.replace(' ', '_').upper();
+  location = location.replace(' ', '_').upper()
+  rowId = zone + '_' + location + '_' + filePath
+  
+  if not active:
+    playingFiles.deleteRow(rowId)
+  else:
+    playingFiles.appendRow([rowId, zone, location, "../video/" + filePath, active])
