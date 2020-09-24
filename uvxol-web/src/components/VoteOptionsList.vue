@@ -2,9 +2,9 @@
   <v-container fluid grid-list-lg>
     <v-card-title>
       <v-container>
-        <v-row>
-          <v-col class="d-flex align-center">
-            <h2>Vote Options (Choices, Votes)</h2>
+        <v-row class="d-flex align-center">
+          <h2>Vote Options (Choices, Votes)</h2>
+          <v-col>
             <a
               href="https://www.notion.so/fpnewtion/Program-Logic-d5d9da560317453a8ba519cf2b4bd5d6#3a1493865afa4aa8a9070ff27c04f6f5"
               target="_new"
@@ -15,7 +15,7 @@
             </a>
           </v-col>
         </v-row>
-        <v-row>
+        <v-row class="d-flex align-baseline">
           <v-col>
             <sub>Status: {{ err }}</sub>
           </v-col>
@@ -28,10 +28,35 @@
               hide-details
             ></v-text-field>
           </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-            <CreateVoteOption :voteOptions="voteOptions" v-on:data-change="refresh"></CreateVoteOption>
+          <v-col class="flex-grow-0 flex-shrink-1" cols="2">
+            <v-dialog v-model="deleteDialog">
+              <template v-slot:activator="{ on }">
+                <v-btn small color="error" dark class="mb-2" v-on="on">Delete visible</v-btn>
+              </template>
+              <v-card>
+                <v-card-title>Confirm deletion</v-card-title>
+                <v-card-text>Are you sure you want to delete {{ currentItems.length }} items?</v-card-text>
+                <v-card-actions>
+                  <v-spacer></v-spacer>
+                  <v-btn text color="primary" @click="closeDeleteDialog">Uhh nvm</v-btn>
+                  <v-btn color="primary" @click="deleteConfirmed">Get rid of that shite</v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
+          </v-col>
+          <v-col class="flex-grow-0" cols="1">
+            <v-dialog v-model="dialog" @click:outside="closeDialog">
+              <template v-slot:activator="{ on }">
+                <v-btn small color="primary" dark v-on="on">New Item</v-btn>
+              </template>
+              <CreateVoteOption
+                :voteOptions="voteOptions"
+                :updateVoteOption="editingVoteOption"
+                :updateId="editingId"
+                v-on:data-change="refresh"
+                v-on:done="closeDialog"
+              ></CreateVoteOption>
+            </v-dialog>
           </v-col>
         </v-row>
       </v-container>
@@ -39,11 +64,15 @@
     <v-data-table
       :headers="headers"
       :items="flatVoteOptions"
-      :items-per-page="10"
+      :items-per-page="40"
       :search="search"
+      @current-items="changeCurrentItems"
+      @click:row.self="item => editVoteOption(item.id)"
       class="elevation-1"
     >
       <template v-slot:item.action="{ item }">
+        <v-icon small @click="editVoteOption(item.id)">mdi-pencil</v-icon>
+        <v-icon small @click="duplicateVoteOption(item.id)">mdi-content-copy</v-icon>
         <v-icon small @click="deleteVoteOption(item.id)">mdi-delete</v-icon>
       </template>
     </v-data-table>
@@ -52,12 +81,27 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from "vue-property-decorator";
-import { VoteOption, VoteOptionId } from "../types";
+import { EditableVoteOption, VoteOption, VoteOptionId } from "../types";
 import { array, option } from "fp-ts";
 import { pipe } from "fp-ts/lib/pipeable";
 import { Option } from "fp-ts/lib/Option";
 import voteOptionStore from "@/store/modules/voteoptions";
 import CreateVoteOption from "./CreateVoteOption.vue";
+import voteoptions from "../store/modules/voteoptions";
+
+const mapVoteOption = (val: VoteOption): EditableVoteOption => ({
+  name: val.name,
+  text: val.text,
+  preventions: val.preventions.map((p) => p.id),
+  dependencies: val.dependencies.map((d) => d.id),
+});
+
+const defaultVoteOption: EditableVoteOption = {
+  name: "",
+  text: "",
+  preventions: [],
+  dependencies: [],
+};
 
 @Component({
   components: { CreateVoteOption },
@@ -65,7 +109,13 @@ import CreateVoteOption from "./CreateVoteOption.vue";
 export default class VoteOptionsList extends Vue {
   @Prop({ required: true }) voteOptions!: VoteOption[];
   @Prop({}) err!: string;
+  dialog = false;
+  deleteDialog = false;
   search = "";
+  editingId: number | undefined = undefined;
+  editingVoteOption: EditableVoteOption = defaultVoteOption;
+  currentItems: VoteOption[] = [];
+
   get flatVoteOptions() {
     return array.map((vo: VoteOption) => ({
       ...vo,
@@ -96,11 +146,41 @@ export default class VoteOptionsList extends Vue {
     { text: "preventions", value: "preventions" },
     { text: "edit", value: "action" },
   ];
+  closeDialog() {
+    this.dialog = false;
+    this.editingId = undefined;
+    this.editingVoteOption = defaultVoteOption;
+  }
+  editVoteOption(id: number) {
+    this.editingId = id;
+    this.editingVoteOption = mapVoteOption(voteOptionStore.voteOptions[id]);
+    this.dialog = true;
+  }
+  deleteVisibleDialog() {
+    this.deleteDialog = true;
+  }
+  closeDeleteDialog() {
+    this.deleteDialog = false;
+  }
   deleteVoteOption(id: number) {
     voteOptionStore
       .deleteVoteOption(id)
       .then(() => this.$emit("data-change"))
       .catch((err: any) => (this.err = err));
+  }
+  changeCurrentItems(v: any[]) {
+    this.currentItems = v;
+  }
+  deleteConfirmed() {
+    Promise.all(
+      this.currentItems.map((e) => voteOptionStore.deleteVoteOption(e.id))
+    )
+      .then(() => this.$emit("data-change"))
+      .then(() => this.closeDeleteDialog())
+      .catch((err) => (this.err = err));
+  }
+  refresh() {
+    this.$emit("data-change");
   }
 }
 </script>

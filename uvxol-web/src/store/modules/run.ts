@@ -95,7 +95,7 @@ const eventStartTask: (self: Run, resetCount: number) => (e: ty.ViewEvent) => ta
   (self, resetCount) => e => pipe(
     // Run the actions
     e.actions,
-    array.map(actionStartTask(self, resetCount)),
+    array.map(actionStartTask(self, resetCount, e)),
     tparallel,
     // Immutably set the view event and its actions to active
     task.map((actions: ty.ViewAction<ty.ActionType>[]) => Object.assign(
@@ -107,41 +107,37 @@ const eventStartTask: (self: Run, resetCount: number) => (e: ty.ViewEvent) => ta
 
 // Create a task to be run after delay, but before duration
 // The task's output is the active event
-const actionStartTask: (self: Run, resetCount: number) => (a: ty.ViewAction<ty.ActionType>) => task.Task<ty.ViewAction<ty.ActionType>> =
-  (self, resetCount) => a => pipe(
+const actionStartTask: (self: Run, resetCount: number, e: ty.ViewEvent) => (a: ty.ViewAction<ty.ActionType>) => task.Task<ty.ViewAction<ty.ActionType>> =
+  (self, resetCount, e) => a => pipe(
     Object.assign({}, a, { active: true }),
     task.of,
-    task.chainFirst(Run.sendToTD(self, resetCount))
+    task.chainFirst(Run.sendToTD(self, resetCount, e))
   );
 
 // Create a task to be run after delay, and after duration
 const eventEndTask: (self: Run, resetCount: number) => (e: ty.ViewEvent) => task.Task<ty.ViewEvent> =
   (self, resetCount) => e => pipe(
-    Object.assign({}, e, { active: false }),
-    inactiveEvent => pipe(
-      inactiveEvent.actions,
-      // Run all the actions
-      array.map(actionEndTask(self, resetCount, inactiveEvent)),
-      tparallel,
-      // Immutably set the view event and its actions to active
-      task.map((actions: ty.ViewAction<ty.ActionType>[]) => Object.assign(
-        {},
-        e,
-        { active: false, actions }
+    e.actions,
+    // Run all the actions
+    array.map(actionEndTask(self, resetCount, e)),
+    tparallel,
+    // Immutably set the view event and its actions to active
+    task.map((actions: ty.ViewAction<ty.ActionType>[]) => Object.assign(
+      {},
+      e,
+      { active: false, actions }
+    )),
+    // Create tasks for all the triggered events
+    task.chainFirst(inactiveEvent => pipe(
+      // Delay to give the events time to load
+      task.of(inactiveEvent.triggers),
+      task.map(array.map(triggeredEventId => eventStore.events[triggeredEventId])),
+      task.map(set.fromArray(eqActionEvent)),
+      task.chainFirst(flow(
+        Run.runEvents(self, resetCount),
+        tparallel_,
       )),
-      // Return the event (set to inactive)
-      task.chain(() => task.of(inactiveEvent)),
-      // Create tasks for all the triggered events
-      task.chainFirst(() => pipe(
-        // Delay to give the events time to load
-        task.of(inactiveEvent.triggers),
-        task.map(array.map(triggeredEventId => eventStore.events[triggeredEventId])),
-        task.map(set.fromArray(eqActionEvent)),
-        task.chain(flow(
-          Run.runEvents(self, resetCount),
-          tparallel_
-        ))))
-    ),
+    ))
   )
 
 // Create a task to be run after delay and duration
@@ -149,7 +145,7 @@ const actionEndTask: (self: Run, resetCount: number, e: ty.ViewEvent) => (a: ty.
   (self, resetCount, e) => a => pipe(
     Object.assign({}, a, { active: false }),
     task.of,
-    task.chainFirst(Run.sendToTD(self, resetCount)),
+    task.chainFirst(Run.sendToTD(self, resetCount, e)),
     task.chainFirst(a => ty.isVoteAction(a) ?
       actionEndVote(self, resetCount)(a) : task.fromIO(() => undefined))
   );
@@ -211,6 +207,11 @@ class Run extends VuexModule {
       set.toArray(ord.ord.contramap(ord.ordNumber, e => e.duration)),
       //  Run al lthe valid events
       array.filterMap(Run.runEvent(self, resetCount)),
+      array.map(t => task.fromIO(() => {
+        // Run the created task when it's made.
+        // This feels super hacky.
+        t();
+      }))
     )
 
   // Generate a task to run this event. This task includes data fetching, triggering other events, etc.
@@ -252,17 +253,18 @@ class Run extends VuexModule {
     )
 
   // Send an action to TD
-  static sendToTD: (self: Run, resetCount: number) => (action: ty.ViewAction<ty.ActionType>) => task.Task<void> =
-    (self, resetCount) => action => task.fromIO(() => {
+  static sendToTD: (self: Run, resetCount: number, actionEvent: ty.ViewEvent) => (action: ty.ViewAction<ty.ActionType>) => task.Task<void> =
+    (self, resetCount, actionEvent) => action => task.fromIO(() => {
       if (self.resetCount === resetCount) {
         self.socket.send(JSON.stringify({
+          eventId: actionEvent.id,
+          actionId: action.id,
           action: action.type,
           zone: action.zone,
           location: action.location,
           active: action.active,
           filePath: ty.isNotVoteAction(action) ? action.filePath : undefined,
           voteOptions: ty.isVoteAction(action) ? action.voteOptions : undefined,
-          voteText: ty.isVoteAction(action) ? action.text : undefined
         }))
       }
     });

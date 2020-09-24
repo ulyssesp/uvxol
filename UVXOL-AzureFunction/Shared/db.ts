@@ -366,6 +366,9 @@ const deleteEventTriggersByTriggerId = async (id: number) =>
 const deleteEventVoteOptionsByEventId = async (id: number) =>
     connectRequest().then(c => c.query`delete from EventVoteOptions where EventId = ${id}`);
 
+const deleteVoteOptionDependenciesByVoteOptionId = async (id: number) =>
+    connectRequest().then(c => c.query`delete from VoteOptionDependencies where VoteOptionId=${id}`);
+
 export const deleteEvent = async (id: number) =>
     id === null || id <= 0 ?
         { err: "invalid id" } :
@@ -536,5 +539,46 @@ export const updateAction = async function (
                 .then(() => ps.unprepare())
                 .catch(() => ps.unprepare())
                 .then(() => getAction(actionId));
+        })
+}
+
+export const updateVoteOption = async function (
+    id: VoteOptionId,
+    name: string,
+    text: string,
+    dependencies: number[],
+    preventions: number[]
+) {
+    return connect
+        .then(() =>
+            pool.request()
+                .input('id', sql.Int, id)
+                .input('text', sql.Text, text)
+                .input('name', sql.Text, name)
+                .query`update VoteOptions set Text=@text, Name=@name where VoteOptionId=@id`)
+        .then(() => deleteVoteOptionDependenciesByVoteOptionId(id))
+        .then(voteOptionsResult => {
+            const voteOptionId = id;
+
+            const ps = new sql.PreparedStatement(pool)
+            ps.input('voteOptionId', sql.Int)
+            ps.input('dependencyId', sql.Int)
+            ps.input('relationship', sql.Int)
+            var psinputs = []
+            dependencies.forEach(dep => {
+                psinputs.push({ voteOptionId, dependencyId: dep, relationship: 0 })
+            });
+
+            preventions.forEach(prev => {
+                psinputs.push({ voteOptionId, dependencyId: prev, relationship: 1 })
+            });
+
+            return ps.prepare(`insert into VoteOptionDependencies 
+                    (VoteOptionId, DependencyId, Relationship) values
+                    (@voteOptionId, @dependencyId, @relationship)`)
+                .then(() => array.reduce(Promise.resolve(), (p, input) => p.then(() => ps.execute(input)))(psinputs))
+                .then(() => ps.unprepare())
+                .catch(() => ps.unprepare())
+                .then(() => getVoteOption(voteOptionId))
         })
 }

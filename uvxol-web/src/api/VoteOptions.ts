@@ -26,6 +26,11 @@ export const postVoteOption: (name: string, text: string, dependencies: number[]
     => Promise<any> = (name, text, dependencies, preventions) =>
         fetch(voteOptionsUri, { method: 'POST', body: JSON.stringify({ name, text, dependencies, preventions }) });
 
+export const putVoteOption: (id: number, name: string, text: string, dependencies: number[], preventions: number[])
+    => Promise<any> = (id, name, text, dependencies, preventions) =>
+        fetch(voteOptionsUri, { method: 'PUT', body: JSON.stringify({ id, name, text, dependencies, preventions }) })
+            .then(res => res.json());
+
 export const deleteVoteOption: (id: number) => Promise<any> =
     (id) => {
         const params = new URLSearchParams();

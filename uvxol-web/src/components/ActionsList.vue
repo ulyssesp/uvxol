@@ -65,7 +65,7 @@
     <v-data-table
       :headers="headers"
       :items="flatactions"
-      :items-per-page="10"
+      :items-per-page="40"
       class="elevation-1"
       :search="search"
       v-on:current-items="changeCurrentActions"

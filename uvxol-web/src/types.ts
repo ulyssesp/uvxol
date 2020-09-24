@@ -78,9 +78,14 @@ export type VoteOptionId = number;
 export interface VoteOption {
     id: VoteOptionId;
     name: string;
-    text?: string | null;
-    preventions: VoteOptionId[];
-    dependencies: VoteOptionId[];
+    text: string;
+    preventions: VoteOption[];
+    dependencies: VoteOption[];
+}
+
+export type EditableVoteOption = Omit<VoteOption, "id" | "preventions" | "dependencies"> & {
+    preventions: number[],
+    dependencies: number[]
 }
 
 export interface Response {
