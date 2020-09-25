@@ -11,6 +11,16 @@ export const getEvents: () => Promise<ActionEvent[]> = () =>
     .then((as: ActionEvent[][]) => as[0] || [])
     .then(array.map(mapEvent));
 
+export const getEvent: (id: number) => Promise<ActionEvent> = id => {
+  const params = new URLSearchParams();
+  params.append("id", id.toString());
+
+  return fetch(eventsuri + "?" + params.toString(), { method: "GET" })
+    .then(res => res.json())
+    .then(e => e[0])
+    .then(mapEvent);
+}
+
 export const getEventsForTrigger: (triggerId: EventId) => Promise<ActionEvent[]> = (triggerId) => {
 
   const params = new URLSearchParams();

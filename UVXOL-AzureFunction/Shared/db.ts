@@ -32,7 +32,10 @@ export const getEvent: (id: EventId) => Promise<any> = async function (id) {
             EventId as id, Name as name, Delay as delay, Duration as duration, 
             (select ET.TriggerId as id from EventTriggers as ET
                 where (ET.EventId = E.EventId) for json auto) as triggers,
-            (select Actions.ActionId as id, Zone as zone, Location as location, FilePath as filePath, Type as type, Name as name
+            (select Actions.ActionId as id, Zone as zone, Location as location, FilePath as filePath, Type as type, Name as name,
+                    (select VO.VoteOptionId as id, VO.Text as text, VO.Name as name from VoteOptions as VO 
+                        join ActionVoteOptions as AVO on (AVO.ActionId = Actions.ActionId and VO.VoteOptionId = AVO.VoteOptionId) 
+                        for json auto) as voteOptions
                 from Actions join EventActions 
                 on (EventActions.EventId = E.EventId and Actions.ActionId = EventActions.ActionId) 
                 for json auto

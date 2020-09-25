@@ -6,7 +6,30 @@
     <v-row>
       <v-btn @click="start()">Start</v-btn>
     </v-row>
-    <v-row>{{ chosenVoteOptions }}</v-row>
+    <v-row>
+      <v-col>
+        <v-autocomplete
+          :items="voteOptions"
+          label="Chosen vote options"
+          placeholder="These vote options have been chosen by the audience"
+          v-model="chosenVoteOptions"
+          item-value="id"
+          item-text="name"
+          multiple
+          dense
+          flat
+          chips
+          deletable-chips
+          :search-input.sync="chooseVoteOption"
+        >
+          <template v-slot:selection="data">
+            <v-chip close @click:close="chosenVoteOptions.splice(index, 1)">
+              <span>{{ data.item.name }}</span>
+            </v-chip>
+          </template>
+        </v-autocomplete>
+      </v-col>
+    </v-row>
     <v-row class="flex-nowrap">
       <v-col cols="2" class="flex-grow-1">
         <v-row>
@@ -50,13 +73,18 @@ import * as fold from "fp-ts/lib/Foldable";
 import * as m from "fp-ts/lib/Monoid";
 import * as na from "fp-ts/lib/NonEmptyArray";
 import * as r from "fp-ts/lib/Record";
+import * as set from "fp-ts/lib/Set";
 
 import { logid, logval } from "../utils/fp-utils";
+import { VoteOptionId } from "../../../UVXOL-AzureFunction/Shared/types";
+import { eqNumber } from "fp-ts/lib/Eq";
 
 @Component({
   components: { ActionC, Event },
 })
-export default class EventsList extends Vue {
+export default class Runner extends Vue {
+  chooseVoteOption = "";
+  chosenVoteOptions: VoteOptionId[] = [];
   private err = "";
   get actionLogByZone() {
     return pipe(
@@ -79,18 +107,37 @@ export default class EventsList extends Vue {
   get events() {
     return array.reverse(this.log);
   }
-  get chosenVoteOptions() {
-    return pipe(
-      runStore.chosenVoteOptions,
-      Object.values,
-      array.map((k) => voteOptionStore.voteOptions[k].name),
-      (vos) => fold.intercalate(m.monoidString, array.array)(", ", vos),
-      (s) => "ChosenVoteOptions: " + s
-    );
+  get chosenVoteOptionsList(): VoteOptionId[] {
+    return runStore.chosenVoteOptions;
+  }
+  @Watch("chosenVoteOptionsList")
+  updateVoteOptionsList(vos: VoteOptionId[]) {
+    this.chosenVoteOptions = vos;
+  }
+  @Watch("chosenVoteOptions")
+  updateVoteOptions(vos: VoteOptionId[]) {
+    // If the ids are different, update the runStore and clear the text entry
+    if (
+      !pipe(vos, set.fromArray(eqNumber), (s) =>
+        set
+          .getEq(eqNumber)
+          .equals(set.fromArray(eqNumber)(runStore.chosenVoteOptions), s)
+      )
+    ) {
+      this.chooseVoteOption = "";
+      runStore.overrideVoteOptions(vos);
+    }
+  }
+  get voteOptions() {
+    return voteOptionStore.voteOptionsList;
   }
   private refresh() {
     this.err = "loading";
-    Promise.all([runStore.start()])
+    const startId =
+      !this.$route.params.id || this.$route.params.id === ""
+        ? undefined
+        : parseInt(this.$route.params.id as string);
+    Promise.all([voteOptionStore.getVoteOptions(), runStore.start(startId)])
       .catch((e: any) => (this.err = e))
       .then(() => (this.err = "loaded"));
   }
@@ -98,7 +145,7 @@ export default class EventsList extends Vue {
     this.refresh();
   }
   async start() {
-    runStore.start();
+    this.refresh();
   }
 }
 </script>

@@ -75,6 +75,11 @@ class Events extends VuexModule {
     return api.getStartEvents();
   }
 
+  @Action({ commit: 'addEventAction', rawError: true })
+  public async getEvent(id: number) {
+    return api.getEvent(id);
+  }
+
   @Action({ commit: 'addEventsAction', rawError: true })
   public async getEventsForTrigger(id: number) {
     return api.getEventsForTrigger(id);

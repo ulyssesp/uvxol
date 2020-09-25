@@ -188,7 +188,7 @@ const actionEndVote: (self: Run, resetCount: number) => (a: ty.ViewAction<"vote"
       // Set chosenVoteOptions[winningVoteOptionId] to winningVoteOptionId
       chosen => task.ap(chosen)(task.of((r: number) => {
         if (self.resetCount === resetCount) {
-          Vue.set(self.chosenVoteOptions, r, r);
+          self.chosenVoteOptions.push(r);
         }
       })),
     )
@@ -197,8 +197,10 @@ const actionEndVote: (self: Run, resetCount: number) => (a: ty.ViewAction<"vote"
 @Module({ dynamic: true, name: 'runStore', store })
 class Run extends VuexModule {
 
-  static startEvents: () => ActionEvent[] = () =>
-    eventStore.eventsList.filter(e => eventStore.eventsByTrigger[e.id] == null)
+  static startEvents: (id?: number) => ActionEvent[] = id =>
+    id
+      ? [eventStore.events[id]]
+      : eventStore.eventsList.filter(e => eventStore.eventsByTrigger[e.id] == null)
 
   // Generate all tasks required to run these events.
   static runEvents: (self: Run, resetCount: number) => (es: Set<ty.ActionEvent>) => task.Task<void>[] = (self, resetCount) =>
@@ -271,7 +273,7 @@ class Run extends VuexModule {
 
   // List of events that have run. Used for Debugging purposes.
   public runList: ty.ViewEvent[] = [];
-  public chosenVoteOptions: { [id: number]: number } = {};
+  public chosenVoteOptions: number[] = [];
   public pendingVoteOptions: { [id: number]: Array<number> } = {};
   private socket = new Socket();
   // Super hacky way to make sure old runs aren't used
@@ -282,20 +284,27 @@ class Run extends VuexModule {
   }
 
   @Action({ commit: 'restart', rawError: true })
-  public async start() { }
+  public async start(id?: number) {
+    return id;
+  }
 
   @Action({ commit: 'addVote', rawError: true })
   public async chooseVote(va: [VoteOptionId, ActionId]) {
     return va;
   }
 
+  @Action({ commit: 'setVoteOptions', rawError: true })
+  public async overrideVoteOptions(vos: VoteOptionId[]) {
+    return vos;
+  }
+
   @Mutation
-  public async restart() {
+  public async restart(id?: number) {
     return pipe(
       // Reset instance variables
       task.fromIO(() => {
         this.runList = [];
-        this.chosenVoteOptions = {}
+        this.chosenVoteOptions = [];
         this.pendingVoteOptions = {};
         this.socket.send(JSON.stringify({
           action: "restart"
@@ -303,8 +312,12 @@ class Run extends VuexModule {
         this.resetCount += 1;
       }),
       // fetch the start events
-      task.chain(_ => constant(eventStore.getStartEvents())),
-      task.map(_ => Run.startEvents()),
+      task.chain(_ => constant(
+        id === undefined
+          ? eventStore.getStartEvents()
+          : eventStore.getEvent(id).then(e => [e])
+      )),
+      task.map(_ => Run.startEvents(id)),
       task.map(set.fromArray(eqActionEvent)),
       // Run the start events in sequence
       task.chain(e => tparallel_(Run.runEvents(this, this.resetCount)(e)))
@@ -314,6 +327,11 @@ class Run extends VuexModule {
   @Mutation
   public async addVote([v, a]: [VoteOptionId, ActionId]) {
     Vue.set(this.pendingVoteOptions, a, array.cons(v, this.pendingVoteOptions[a] || []));
+  }
+
+  @Mutation
+  public async setVoteOptions(vos: VoteOptionId[]) {
+    this.chosenVoteOptions = vos;
   }
 
   // @Mutation

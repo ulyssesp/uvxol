@@ -70,12 +70,12 @@
       class="elevation-1"
       :search="search"
       @current-items="changeCurrentItems"
-      @click:row.self="item => editEvent(item.id)"
     >
       <template v-slot:item.action="{ item }">
-        <v-icon small @click="editEvent(item.id)">mdi-pencil</v-icon>
-        <v-icon small @click="duplicateEvent(item.id)">mdi-content-copy</v-icon>
-        <v-icon small @click="deleteEvent(item.id)">mdi-delete</v-icon>
+        <v-icon small class="mr-2" @click="editEvent(item.id)">mdi-pencil</v-icon>
+        <v-icon small class="mr-2" @click="duplicateEvent(item.id)">mdi-content-copy</v-icon>
+        <v-icon small class="mr-2" @click="deleteEvent(item.id)">mdi-delete</v-icon>
+        <v-icon small class="mr-2" @click="runEvent(item.id)">mdi-play</v-icon>
       </template>
     </v-data-table>
   </v-container>
@@ -96,6 +96,7 @@ import Events from "../store/modules/events";
 import { getModule } from "vuex-module-decorators";
 import eventStore from "../store/modules/events";
 import CreateEvent from "./CreateEvent.vue";
+import router from "../router";
 
 const defaultEvent: EditableEvent = {
   name: "",
@@ -210,6 +211,9 @@ export default class EventsList extends Vue {
       .then(() => this.$emit("data-change"))
       .then(() => this.closeDeleteDialog())
       .catch((err) => (this.err = err));
+  }
+  runEvent(id: number) {
+    this.$router.push({ name: "runner", params: { id: id.toString() } });
   }
 }
 </script>
