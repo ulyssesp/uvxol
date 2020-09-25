@@ -97,6 +97,9 @@ import { getModule } from "vuex-module-decorators";
 import eventStore from "../store/modules/events";
 import CreateEvent from "./CreateEvent.vue";
 import router from "../router";
+import * as nonEmptyArray from "fp-ts/lib/NonEmptyArray";
+import * as set from "fp-ts/lib/Set";
+import { eqNumber } from "fp-ts/lib/Eq";
 
 const defaultEvent: EditableEvent = {
   name: "",
@@ -133,27 +136,58 @@ export default class EventsList extends Vue {
   currentItems: ActionEvent[] = [];
   deleteDialog = false;
   get flatevents() {
-    return array.map((e: ActionEvent) => ({
-      ...e,
-      actions: array
-        .map((a: Action<ActionType>) => a.name)(e.actions || [])
-        .join(),
-      dependencies: array
-        .map<VoteOption, string>((vo) => vo.name)(e.dependencies || [])
-        .join(),
-      preventions: array
-        .map<VoteOption, string>((vo) => vo.name)(e.preventions || [])
-        .join(),
-      triggers: array
-        .filterMap((pid) =>
-          pipe(
-            this.events,
-            array.findFirst<ActionEvent>((vot) => pid === vot.id),
-            option.map<ActionEvent, string>((e) => e.name)
-          )
-        )(e.triggers || [])
-        .join(),
-    }))(this.events);
+    return pipe(
+      this.events,
+      (events) => {
+        // events by id
+        const eventmap: Record<number, ActionEvent> = {};
+
+        // keep track of the starting events (events which have nothing that triggers them)
+        const startEvents = set.fromArray<number>(eqNumber)(
+          events.map((e) => e.id)
+        );
+
+        events.forEach((e) => {
+          eventmap[e.id] = e;
+          e.triggers.forEach((t) => startEvents.delete(t));
+        });
+
+        const bfs: number[] = [];
+        const queue: number[] = [...startEvents.values()];
+        const previousEvents: Set<number> = new Set();
+        while (queue.length != 0) {
+          const id: number = queue.shift()!;
+          if (!previousEvents.has(id)) {
+            bfs.push(id);
+            eventmap[id].triggers.forEach((t: number) => queue.push(t));
+            previousEvents.add(id);
+          }
+        }
+
+        return bfs.map((eid) => eventmap[eid]);
+      },
+      array.map((e: ActionEvent) => ({
+        ...e,
+        actions: array
+          .map((a: Action<ActionType>) => a.name)(e.actions || [])
+          .join(),
+        dependencies: array
+          .map<VoteOption, string>((vo) => vo.name)(e.dependencies || [])
+          .join(),
+        preventions: array
+          .map<VoteOption, string>((vo) => vo.name)(e.preventions || [])
+          .join(),
+        triggers: array
+          .filterMap((pid) =>
+            pipe(
+              this.events,
+              array.findFirst<ActionEvent>((vot) => pid === vot.id),
+              option.map<ActionEvent, string>((e) => e.name)
+            )
+          )(e.triggers || [])
+          .join(),
+      }))
+    );
   }
   headers = [
     { text: "name", value: "name" },

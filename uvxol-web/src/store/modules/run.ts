@@ -40,6 +40,12 @@ const tparallel: <A>(ta: task.Task<A>[]) => task.Task<A[]> =
 const tparallel_: <A>(ta: task.Task<A>[]) => task.Task<void> =
   ta => fld.traverse_(task.task, array.array)(ta, task.map(constVoid))
 
+const delayCoroutine: (time: number) => <A>(t: Task<A>) => Task<A> = time => flow(
+  task.chain(a => () => new Promise((res, rej) => {
+    res(a);
+  }))
+)
+
 const checkVoteOptions:
   (chosenVoteOptions: { [id: number]: number }) =>
     (target: boolean) =>
