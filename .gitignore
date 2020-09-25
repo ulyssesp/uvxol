@@ -1,5 +1,5 @@
 .devcontainer/
 **/node_modules
 
-TD/video/**
+video/**
 runner-wasm/
