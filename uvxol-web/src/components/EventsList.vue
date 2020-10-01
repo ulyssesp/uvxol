@@ -138,7 +138,9 @@ export default class EventsList extends Vue {
   get flatevents() {
     return pipe(
       this.events,
-      (events) => {
+      (eventsOrig) => {
+        const events = [...eventsOrig];
+
         // events by id
         const eventmap: Record<number, ActionEvent> = {};
 

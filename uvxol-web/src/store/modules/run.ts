@@ -47,23 +47,22 @@ const delayCoroutine: (time: number) => <A>(t: Task<A>) => Task<A> = time => flo
 )
 
 const checkVoteOptions:
-  (chosenVoteOptions: { [id: number]: number }) =>
+  (chosenVoteOptions: number[]) =>
     (target: boolean) =>
       (checkVoteOptions: VoteOption[]) => boolean[] = chosenVoteOptions => target =>
-        array.map((voteOption: VoteOption) => (chosenVoteOptions[voteOption.id] === undefined) === target)
+        array.map((voteOption: VoteOption) => (chosenVoteOptions.includes(voteOption.id)) === target)
 
-const checkEventShouldRun = (chosenVoteOptions: { [id: number]: number }, e: ty.ActionEvent) =>
-  pipe(
-    array.getMonoid<boolean>().concat(
-      // Check if chosenVoteOptions contains dependencies
-      checkVoteOptions(chosenVoteOptions)(false)(e.dependencies),
-      // Check if chosenVoteOptions doesn't contain preventions
-      checkVoteOptions(chosenVoteOptions)(true)(e.preventions)
-    ),
-    ds => semigroup.fold(semigroup.semigroupAll)(true, ds),
-    // Convert `false` to None
-    option.fromPredicate(identity),
-  )
+const checkEventShouldRun = (chosenVoteOptions: number[], e: ty.ActionEvent) => pipe(
+  array.getMonoid<boolean>().concat(
+    // Check if chosenVoteOptions contains dependencies
+    checkVoteOptions(chosenVoteOptions)(true)(e.dependencies),
+    // Check if chosenVoteOptions doesn't contain preventions
+    checkVoteOptions(chosenVoteOptions)(false)(e.preventions)
+  ),
+  ds => semigroup.fold(semigroup.semigroupAll)(true, ds),
+  // Convert `false` to None
+  option.fromPredicate(identity),
+)
 
 declare module 'fp-ts/lib/HKT' {
   interface URItoKind<A> {
@@ -117,7 +116,7 @@ const actionStartTask: (self: Run, resetCount: number, e: ty.ViewEvent) => (a: t
   (self, resetCount, e) => a => pipe(
     Object.assign({}, a, { active: true }),
     task.of,
-    task.chainFirst(Run.sendToTD(self, resetCount, e))
+    task.chainFirst(sendToTD(self, resetCount, e))
   );
 
 // Create a task to be run after delay, and after duration
@@ -139,7 +138,8 @@ const eventEndTask: (self: Run, resetCount: number) => (e: ty.ViewEvent) => task
       task.of(inactiveEvent.triggers),
       task.map(array.map(triggeredEventId => eventStore.events[triggeredEventId])),
       task.map(set.fromArray(eqActionEvent)),
-      task.chainFirst(flow(
+      task.chainFirst(s => pipe(
+        s,
         Run.runEvents(self, resetCount),
         tparallel_,
       )),
@@ -151,7 +151,7 @@ const actionEndTask: (self: Run, resetCount: number, e: ty.ViewEvent) => (a: ty.
   (self, resetCount, e) => a => pipe(
     Object.assign({}, a, { active: false }),
     task.of,
-    task.chainFirst(Run.sendToTD(self, resetCount, e)),
+    task.chainFirst(sendToTD(self, resetCount, e)),
     task.chainFirst(a => ty.isVoteAction(a) ?
       actionEndVote(self, resetCount)(a) : task.fromIO(() => undefined))
   );
@@ -195,10 +195,144 @@ const actionEndVote: (self: Run, resetCount: number) => (a: ty.ViewAction<"vote"
       chosen => task.ap(chosen)(task.of((r: number) => {
         if (self.resetCount === resetCount) {
           self.chosenVoteOptions.push(r);
+          self.world.chosenVoteOptions.add(r);
         }
       })),
     )
 
+const socket = new Socket();
+
+// Send an action to TD
+const sendToTD: (self: Run, resetCount: number, actionEvent: ty.ViewEvent) => (action: ty.ViewAction<ty.ActionType>) => task.Task<void> =
+  (self, resetCount, actionEvent) => action => task.fromIO(() => {
+    if (self.resetCount === resetCount) {
+      socket.send(JSON.stringify({
+        eventId: actionEvent.id,
+        actionId: action.id,
+        action: action.type,
+        zone: action.zone,
+        location: action.location,
+        active: action.active,
+        filePath: ty.isNotVoteAction(action) ? action.filePath : undefined,
+        voteOptions: ty.isVoteAction(action) ? action.voteOptions : undefined,
+      }))
+    }
+  });
+
+///////////////////////
+// New w/ triggers / ecs
+///////////////////////
+
+// Send an action to TD
+const sendToTDECS: (actionEventId: number, active: boolean) => (action: ty.ViewAction<ty.ActionType>) => void =
+  (actionEventId, active) => action =>
+    socket.send(JSON.stringify({
+      eventId: actionEventId,
+      actionId: action.id,
+      action: action.type,
+      zone: action.zone,
+      location: action.location,
+      active: active,
+      filePath: ty.isNotVoteAction(action) ? action.filePath : undefined,
+      voteOptions: ty.isVoteAction(action) ? action.voteOptions : undefined,
+    }))
+
+export const timeActiveSystem = (time: number, ts: IterableIterator<ty.TimeTriggerComponent>) => {
+  for (let t of ts) {
+    t.timeActive = time > t.timeOn;
+  }
+}
+
+export const timeToggleSystem = (time: number, ts: IterableIterator<ty.TimeToggleComponent>) => {
+  for (let t of ts) {
+    t.timeActive = time > t.timeOn && time < t.timeOff;
+  }
+}
+
+export const dependenciesActiveSystem = (chosenVoteOptions: Set<number>, ts: IterableIterator<ty.DependenciesTriggerComponent>) => {
+  for (let t of ts) {
+    t.dependenciesActive = t.dependencies.every(d => chosenVoteOptions.has(d));
+  }
+}
+
+export const eventTriggerSystem = (world: ty.World, ets: IterableIterator<ty.EventTrigger>) => {
+  for (let et of ets) {
+    if (
+      et.dependenciesActive && et.timeActive &&
+      !world.triggeredEvents.has(et.eventId)
+      // && world.events.has(et.eventId)
+    ) {
+      const viewEvent = actionEventToViewEvent(eventStore.events[et.eventId]); //world.events.get(et.eventId)!;
+      console.log("Adding trigger " + viewEvent.name);
+      // Add a TriggeredEvent which might not be active yet
+      world.triggeredEvents.set(et.eventId, {
+        eventId: et.eventId,
+        timeTriggered: undefined,
+        timeActive: false,
+        timeOn: world.time + viewEvent.delay,
+        timeOff: world.time + viewEvent.delay + viewEvent.duration
+      })
+    }
+  }
+}
+
+export const activateTriggeredEventSystem = (world: ty.World, ets: IterableIterator<ty.TriggeredEvent>) => {
+  for (let te of ets) {
+    // const viewEvent = world.events.get(te.eventId);
+    const viewEvent = actionEventToViewEvent(eventStore.events[te.eventId]); //world.events.get(et.eventId)!;
+    if (te.timeActive && te.timeTriggered === undefined && viewEvent !== undefined) {
+      console.log("Playing " + viewEvent.name);
+      te.timeTriggered = world.time;
+      // send to TD
+      viewEvent.actions.forEach(a => sendToTDECS(te.eventId, true));
+    } else if (!te.timeActive && te.timeTriggered !== undefined && viewEvent !== undefined) {
+      console.log("Stopping " + viewEvent.name);
+      // add eventtriggers for the triggers
+      viewEvent.triggers.forEach(t => {
+        const triggeredEvent = actionEventToViewEvent(eventStore.events[t]);//world.events.get(t);
+        console.log("Adding trigger " + triggeredEvent.name);
+        if (triggeredEvent) {
+          world.triggers.add({
+            eventId: t,
+            timeActive: false,
+            timeOn: 0,
+            dependenciesActive: false,
+            dependencies: triggeredEvent.dependencies.map(n => n.id)
+          });
+        }
+      });
+      te.timeTriggered = undefined;
+      // send to TD
+      viewEvent.actions.forEach(a => sendToTDECS(te.eventId, false));
+    }
+  }
+}
+
+const defaultWorld: ty.World = {
+  events: new Map(),
+  triggeredEvents: new Map(),
+  triggers: new Set(),
+  chosenVoteOptions: new Set(),
+  time: 0,
+}
+
+const run = (prevTime: number, world: ty.World) => {
+  const currentTime = performance.now();
+  world.time += currentTime - prevTime;
+  timeActiveSystem(world.time, world.triggers.values());
+  dependenciesActiveSystem(world.chosenVoteOptions, world.triggers.values());
+  eventTriggerSystem(world, world.triggers.values());
+
+  timeToggleSystem(world.time, world.triggeredEvents.values());
+  activateTriggeredEventSystem(world, world.triggeredEvents.values());
+
+  requestAnimationFrame(() => run(currentTime, world));
+}
+
+
+////////////////////////
+/// End ECS
+/////////////////////
 
 @Module({ dynamic: true, name: 'runStore', store })
 class Run extends VuexModule {
@@ -210,7 +344,8 @@ class Run extends VuexModule {
 
   // Generate all tasks required to run these events.
   static runEvents: (self: Run, resetCount: number) => (es: Set<ty.ActionEvent>) => task.Task<void>[] = (self, resetCount) =>
-    flow(
+    a => pipe(
+      a,
       // Convert set to array ordering by duration
       set.toArray(ord.ord.contramap(ord.ordNumber, e => e.duration)),
       //  Run al lthe valid events
@@ -223,8 +358,9 @@ class Run extends VuexModule {
     )
 
   // Generate a task to run this event. This task includes data fetching, triggering other events, etc.
-  static runEvent: (self: Run, resetCount: number) => (e: ty.ActionEvent) => option.Option<task.Task<void>> = (self, resetCount) =>
-    flow(
+  static runEvent: (self: Run, resetCount: number) => (e: ty.ActionEvent) => option.Option<task.Task<void>> = (self, resetCount) => e =>
+    pipe(
+      e,
       option.fromNullable,
       // If the event shouldn't be run, return None
       option.chainFirst(e => checkEventShouldRun(self.chosenVoteOptions, e)),
@@ -260,28 +396,11 @@ class Run extends VuexModule {
       ])),
     )
 
-  // Send an action to TD
-  static sendToTD: (self: Run, resetCount: number, actionEvent: ty.ViewEvent) => (action: ty.ViewAction<ty.ActionType>) => task.Task<void> =
-    (self, resetCount, actionEvent) => action => task.fromIO(() => {
-      if (self.resetCount === resetCount) {
-        self.socket.send(JSON.stringify({
-          eventId: actionEvent.id,
-          actionId: action.id,
-          action: action.type,
-          zone: action.zone,
-          location: action.location,
-          active: action.active,
-          filePath: ty.isNotVoteAction(action) ? action.filePath : undefined,
-          voteOptions: ty.isVoteAction(action) ? action.voteOptions : undefined,
-        }))
-      }
-    });
 
   // List of events that have run. Used for Debugging purposes.
   public runList: ty.ViewEvent[] = [];
   public chosenVoteOptions: number[] = [];
   public pendingVoteOptions: { [id: number]: Array<number> } = {};
-  private socket = new Socket();
   // Super hacky way to make sure old runs aren't used
   resetCount = 0;
 
@@ -304,15 +423,20 @@ class Run extends VuexModule {
     return vos;
   }
 
+  public world: ty.World = Object.assign({}, defaultWorld);
+  private ecsRunning: boolean = false;
+  private eventsMap: Map<number, ty.ViewEvent> = new Map();
   @Mutation
   public async restart(id?: number) {
+    Object.assign(this.world, defaultWorld);
+
     return pipe(
       // Reset instance variables
       task.fromIO(() => {
         this.runList = [];
         this.chosenVoteOptions = [];
         this.pendingVoteOptions = {};
-        this.socket.send(JSON.stringify({
+        socket.send(JSON.stringify({
           action: "restart"
         }))
         this.resetCount += 1;
@@ -324,6 +448,22 @@ class Run extends VuexModule {
           : eventStore.getEvent(id).then(e => [e])
       )),
       task.map(_ => Run.startEvents(id)),
+      task.chainFirst(es => task.fromIO(() => {
+        this.world.triggers.clear();
+        es.forEach(e => {
+          this.world.triggers.add({
+            eventId: e.id,
+            timeActive: false,
+            timeOn: 0,
+            dependenciesActive: false,
+            dependencies: e.dependencies.map(n => n.id)
+          })
+        });
+        if (!this.ecsRunning) {
+          run(performance.now(), this.world);
+        }
+
+      })),
       task.map(set.fromArray(eqActionEvent)),
       // Run the start events in sequence
       task.chain(e => tparallel_(Run.runEvents(this, this.resetCount)(e)))
@@ -338,6 +478,7 @@ class Run extends VuexModule {
   @Mutation
   public async setVoteOptions(vos: VoteOptionId[]) {
     this.chosenVoteOptions = vos;
+    this.world.chosenVoteOptions = new Set(vos);
   }
 
   // @Mutation

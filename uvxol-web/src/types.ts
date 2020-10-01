@@ -1,3 +1,5 @@
+import Socket from './store/modules/socket';
+
 type ArrayType<A> = A extends Array<infer U> ? U : never;
 type RequireId<T> =
     Exclude<{ [K in keyof T]:
@@ -90,4 +92,43 @@ export type EditableVoteOption = Omit<VoteOption, "id" | "preventions" | "depend
 
 export interface Response {
     message: string;
+}
+
+// Run
+
+export type TimeTriggerComponent = {
+    timeActive: boolean;
+    timeOn: number;
+}
+
+export type DependenciesTriggerComponent = {
+    dependenciesActive: boolean;
+    dependencies: number[];
+}
+
+export type EventIdComponent = {
+    eventId: number;
+}
+
+export type TimeToggleComponent = TimeTriggerComponent & {
+    timeOff: number;
+}
+
+export type TriggeredEvent = EventIdComponent & TimeToggleComponent & {
+    timeTriggered: number | undefined;
+}
+
+export type TriggeredAction = {
+    actionId: number;
+    timeTriggered: number | undefined;
+}
+
+export type EventTrigger = EventIdComponent & TimeTriggerComponent & DependenciesTriggerComponent;
+
+export type World = {
+    events: Map<number, ViewEvent>;
+    triggeredEvents: Map<number, TriggeredEvent>;
+    triggers: Set<EventTrigger>;
+    chosenVoteOptions: Set<number>;
+    time: number;
 }
