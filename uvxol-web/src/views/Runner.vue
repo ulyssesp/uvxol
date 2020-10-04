@@ -5,8 +5,11 @@
     </v-row>
     <v-row>
       <v-btn @click="start()">Start</v-btn>
+      <v-btn @click="setSpeed(1)">Play</v-btn>
+      <v-btn @click="setSpeed(0)">Pause</v-btn>
       <v-btn @click="doubleSpeed()">Speed up</v-btn>
       <v-btn @click="halfSpeed()">Speed down</v-btn>
+      <v-btn @click="setSpeed(-1)">Reverse</v-btn>
     </v-row>
     <v-row>
       <v-col>
@@ -202,6 +205,9 @@ export default class Runner extends Vue {
   }
   async halfSpeed() {
     runStore.halfSpeed();
+  }
+  async setSpeed(speed: number) {
+    runStore.setTimeScale(speed);
   }
 }
 </script>

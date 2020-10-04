@@ -170,6 +170,7 @@ export class Reset extends System {
 
             const renderer = this.queries.renderer.results[0].getMutableComponent(Renderer)!;
             renderer.events.splice(0, renderer.events.length);
+
             if (renderer.socket) {
                 renderer.socket.send(JSON.stringify({ action: "restart" }));
             }
@@ -322,6 +323,25 @@ export class EventTriggerSystem extends System {
                 })
                 .addComponent(TimeToggle, { on, off });
 
+            eventData.actions.forEach(a => {
+                const actionData = actionStore.actionsDict[a.id];
+                const entity = this.world.createEntity();
+
+                actionData.type === "vote"
+                    ? entity
+                        .addComponent(RenderableVoteAction, Object.assign({}, actionData, {
+                            eventId: eventData.id,
+                            type: "vote" as "vote",
+                            voteOptions: (actionData as Action<"vote">).voteOptions!.map(vo => voteOptionStore.voteOptions[vo.id])
+                        }))
+                        .addComponent(TimeToggle, { on: on, off: off })
+                        .addComponent(VoteAction, { id: actionData.id, votes: (actionData as Action<"vote">).voteOptions.map(vo => vo.id) })
+                    : entity
+                        .addComponent(RenderableFileAction, Object.assign({}, actionData, { eventId: eventData.id, type: "video" as "video" }))
+                        .addComponent(TimeToggle, { on: on, off: off })
+
+            });
+
             eventData.triggers.forEach(t => {
                 const triggerData = eventStore.events[t];
                 this.world.createEntity()
@@ -329,6 +349,8 @@ export class EventTriggerSystem extends System {
                     .addComponent(DependenciesTrigger, { dependencies: triggerData.dependencies.map(vo => vo.id) })
                     .addComponent(TimeToggle, { on: off, off: off + 1000 })
             })
+
+            entity.remove();
         });
     }
 }
@@ -378,25 +400,6 @@ export class EventRendererSystem extends System {
             const timeToggle = entity.getComponent(TimeToggle)!;
             const renderableEvent = entity.getComponent<RenderableEvent>(RenderableEvent)!;
             const eventData = eventStore.events[renderableEvent.id];
-
-            eventData.actions.forEach(a => {
-                const actionData = actionStore.actionsDict[a.id];
-                const entity = this.world.createEntity();
-
-                actionData.type === "vote"
-                    ? entity
-                        .addComponent(RenderableVoteAction, Object.assign({}, actionData, {
-                            eventId: eventData.id,
-                            type: "vote" as "vote",
-                            voteOptions: (actionData as Action<"vote">).voteOptions!.map(vo => voteOptionStore.voteOptions[vo.id])
-                        }))
-                        .addComponent(TimeToggle, { on: timeToggle.on, off: timeToggle.off })
-                        .addComponent(VoteAction, { id: actionData.id, votes: (actionData as Action<"vote">).voteOptions.map(vo => vo.id) })
-                    : entity
-                        .addComponent(RenderableFileAction, Object.assign({}, actionData, { eventId: eventData.id, type: "video" as "video" }))
-                        .addComponent(TimeToggle, { on: timeToggle.on, off: timeToggle.off })
-
-            });
         })
 
         this.queries.finishedEvents.results!.forEach(entity => {
@@ -470,6 +473,7 @@ export class ActionRendererSystem extends System {
         });
     }
 }
+
 // Send an action to TD
 const sendToTD: (socket: Socket, actionEventId: number, active: boolean, action: Action<ActionType>) => void =
     (socket, actionEventId, active, action) =>
