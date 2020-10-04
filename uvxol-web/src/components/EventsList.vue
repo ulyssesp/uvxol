@@ -31,15 +31,24 @@
           <v-col class="flex-grow-0 flex-shrink-1" cols="2">
             <v-dialog v-model="deleteDialog">
               <template v-slot:activator="{ on }">
-                <v-btn small color="error" dark class="mb-2" v-on="on">Delete visible</v-btn>
+                <v-btn small color="error" dark class="mb-2" v-on="on"
+                  >Delete visible</v-btn
+                >
               </template>
               <v-card>
                 <v-card-title>Confirm deletion</v-card-title>
-                <v-card-text>Are you sure you want to delete {{ currentItems.length }} items?</v-card-text>
+                <v-card-text
+                  >Are you sure you want to delete
+                  {{ currentItems.length }} items?</v-card-text
+                >
                 <v-card-actions>
                   <v-spacer></v-spacer>
-                  <v-btn text color="primary" @click="closeDeleteDialog">Uhh nvm</v-btn>
-                  <v-btn color="primary" @click="deleteConfirmed">Get rid of that shite</v-btn>
+                  <v-btn text color="primary" @click="closeDeleteDialog"
+                    >Uhh nvm</v-btn
+                  >
+                  <v-btn color="primary" @click="deleteConfirmed"
+                    >Get rid of that shite</v-btn
+                  >
                 </v-card-actions>
               </v-card>
             </v-dialog>
@@ -72,9 +81,15 @@
       @current-items="changeCurrentItems"
     >
       <template v-slot:item.action="{ item }">
-        <v-icon small class="mr-2" @click="editEvent(item.id)">mdi-pencil</v-icon>
-        <v-icon small class="mr-2" @click="duplicateEvent(item.id)">mdi-content-copy</v-icon>
-        <v-icon small class="mr-2" @click="deleteEvent(item.id)">mdi-delete</v-icon>
+        <v-icon small class="mr-2" @click="editEvent(item.id)"
+          >mdi-pencil</v-icon
+        >
+        <v-icon small class="mr-2" @click="duplicateEvent(item.id)"
+          >mdi-content-copy</v-icon
+        >
+        <v-icon small class="mr-2" @click="deleteEvent(item.id)"
+          >mdi-delete</v-icon
+        >
         <v-icon small class="mr-2" @click="runEvent(item.id)">mdi-play</v-icon>
       </template>
     </v-data-table>

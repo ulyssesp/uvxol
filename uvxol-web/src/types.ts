@@ -23,17 +23,25 @@ export type EditableAction<T extends ActionType> = {
     location: string;
 } & (T extends "vote" ? VoteActionFields : FileActionFields);
 
-type VoteActionFields = {
+export type VoteActionFields = {
     voteOptions: VoteOption[];
     text: string;
 }
 
-type FileActionFields = {
+export type FileActionFields = {
     filePath: string;
 }
 
 export type ViewAction<T extends ActionType> = Action<T> & { active: boolean };
-export type ViewEvent = Omit<ActionEvent, "actions"> & { active: boolean, actions: ViewAction<ActionType>[] };
+// export type ViewEvent = Omit<ActionEvent, "actions"> & { active: boolean, actions: ViewAction<ActionType>[] };
+
+export type EventRenderData = {
+    id: number,
+    name: string,
+    duration: number,
+    delay: number,
+    state: "pending" | "active" | "finished"
+}
 
 export function isServerAction<T extends ActionType>(a: ServerType<EditableAction<T>> | ServerType<Action<T>>): a is ServerType<Action<T>> {
     return (a as Action<T>).id !== undefined;
@@ -92,43 +100,4 @@ export type EditableVoteOption = Omit<VoteOption, "id" | "preventions" | "depend
 
 export interface Response {
     message: string;
-}
-
-// Run
-
-export type TimeTriggerComponent = {
-    timeActive: boolean;
-    timeOn: number;
-}
-
-export type DependenciesTriggerComponent = {
-    dependenciesActive: boolean;
-    dependencies: number[];
-}
-
-export type EventIdComponent = {
-    eventId: number;
-}
-
-export type TimeToggleComponent = TimeTriggerComponent & {
-    timeOff: number;
-}
-
-export type TriggeredEvent = EventIdComponent & TimeToggleComponent & {
-    timeTriggered: number | undefined;
-}
-
-export type TriggeredAction = {
-    actionId: number;
-    timeTriggered: number | undefined;
-}
-
-export type EventTrigger = EventIdComponent & TimeTriggerComponent & DependenciesTriggerComponent;
-
-export type World = {
-    events: Map<number, ViewEvent>;
-    triggeredEvents: Map<number, TriggeredEvent>;
-    triggers: Set<EventTrigger>;
-    chosenVoteOptions: Set<number>;
-    time: number;
 }

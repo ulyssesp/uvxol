@@ -1,5 +1,5 @@
 <template>
-  <v-card v-bind:disabled="!event.active">
+  <v-card v-bind:disabled="event.state !== 'active'">
     <v-list-item three-line>
       <v-list-item-content class="align-self-start">
         <v-list-item-title class="headline mb-2">
@@ -7,10 +7,13 @@
             <template v-slot:activator="{ on, attrs }">
               <span v-bind="attrs" v-on="on">{{ event.name }}</span>
             </template>
-            <span>{{ event.active ? event.name : "disabled" }}</span>
+            <span>{{ event.name }}</span>
           </v-tooltip>
         </v-list-item-title>
-        <v-list-item-subtitle>Delay: {{ event.delay }}, Duration: {{ event.duration }}</v-list-item-subtitle>
+        <v-list-item-subtitle>
+          State: {{ event.state }}, Delay: {{ event.delay }}, Duration:
+          {{ event.duration }}</v-list-item-subtitle
+        >
       </v-list-item-content>
     </v-list-item>
   </v-card>

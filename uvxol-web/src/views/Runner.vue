@@ -5,6 +5,8 @@
     </v-row>
     <v-row>
       <v-btn @click="start()">Start</v-btn>
+      <v-btn @click="doubleSpeed()">Speed up</v-btn>
+      <v-btn @click="halfSpeed()">Speed down</v-btn>
     </v-row>
     <v-row>
       <v-col>
@@ -44,7 +46,10 @@
           <v-subheader>{{ zone[0] }}</v-subheader>
         </v-row>
         <v-row v-for="(action, i) in zone[1]" :key="i" class="mb-3">
-          <ActionC v-bind:action="action" class="ms-2 pa-1 flex-grow-1"></ActionC>
+          <ActionC
+            v-bind:action="action"
+            class="ms-2 pa-1 flex-grow-1"
+          ></ActionC>
         </v-row>
       </v-col>
     </v-row>
@@ -59,13 +64,15 @@ import {
   VoteOption,
   ActionType,
   ViewAction,
-  ViewEvent,
+  EventRenderData,
 } from "../types";
-import { array, option, show } from "fp-ts";
+import { array, nonEmptyArray, option, show } from "fp-ts";
 import { pipe } from "fp-ts/lib/pipeable";
-import { constant } from "fp-ts/lib/function";
+import { constant, flow } from "fp-ts/lib/function";
 import runStore from "../store/modules/run";
 import voteOptionStore from "../store/modules/voteoptions";
+import eventStore from "../store/modules/events";
+import actionStore from "../store/modules/actions";
 import Event from "../components/Event.vue";
 import ActionC from "../components/Action.vue";
 import * as sg from "fp-ts/lib/Semigroup";
@@ -74,10 +81,19 @@ import * as m from "fp-ts/lib/Monoid";
 import * as na from "fp-ts/lib/NonEmptyArray";
 import * as r from "fp-ts/lib/Record";
 import * as set from "fp-ts/lib/Set";
+import * as ord from "fp-ts/lib/Ord";
+import * as eq from "fp-ts/lib/Eq";
 
 import { logid, logval } from "../utils/fp-utils";
 import { VoteOptionId } from "../../../UVXOL-AzureFunction/Shared/types";
 import { eqNumber } from "fp-ts/lib/Eq";
+import { none } from "fp-ts/lib/Option";
+
+const stateOrdMap = {
+  active: -1,
+  pending: 0,
+  finished: 1,
+};
 
 @Component({
   components: { ActionC, Event },
@@ -87,25 +103,53 @@ export default class Runner extends Vue {
   chosenVoteOptions: VoteOptionId[] = [];
   private err = "";
   get actionLogByZone() {
+    console.log(runStore.actionList);
     return pipe(
-      this.events,
-      array.chain((e: ViewEvent) => e.actions),
+      runStore.actionList,
       na.fromArray,
       option.map(
-        na.groupBy((a: ViewAction<ActionType>) => a.zone.toLowerCase())
+        na.groupBy((a: Omit<Action<ActionType>, "type">) =>
+          a.zone.toLowerCase()
+        )
       ),
       option.map(r.toArray),
       option.map(array.reverse),
       option.getOrElse(
-        constant([] as [string, Array<ViewAction<ActionType>>][])
+        constant([] as [string, Array<Omit<Action<ActionType>, "type">>][])
       )
     );
   }
   get log() {
-    return runStore.log;
+    return runStore.events;
   }
   get events() {
-    return array.reverse(this.log);
+    return pipe(
+      runStore.events,
+      array.reverse,
+      na.fromArray,
+      option.chain(
+        flow(
+          na.sort<EventRenderData>(
+            ord.fromCompare((a, b) =>
+              stateOrdMap[a.state] < stateOrdMap[b.state]
+                ? -1
+                : stateOrdMap[a.state] > stateOrdMap[b.state]
+                ? 1
+                : 0
+            )
+          ),
+          na.group<EventRenderData>(
+            eq.fromEquals((a, b) => a.state === a.state)
+          ),
+          na.fromArray
+        )
+      ),
+      option.map(na.flatten),
+      option.fold(
+        () => [] as EventRenderData[],
+        (a) => a
+      )
+    );
   }
   get chosenVoteOptionsList(): VoteOptionId[] {
     return runStore.chosenVoteOptions;
@@ -137,15 +181,27 @@ export default class Runner extends Vue {
       !this.$route.params.id || this.$route.params.id === ""
         ? undefined
         : parseInt(this.$route.params.id as string);
-    Promise.all([voteOptionStore.getVoteOptions(), runStore.start(startId)])
+    Promise.all([
+      voteOptionStore.getVoteOptions(),
+      eventStore.getEvents(),
+      actionStore.getActions(),
+    ])
       .catch((e: any) => (this.err = e))
-      .then(() => (this.err = "loaded"));
+      .then(() => (this.err = "loaded"))
+      .then(() => runStore.restart(startId));
   }
   protected mounted() {
     this.refresh();
   }
   async start() {
     this.refresh();
+  }
+
+  async doubleSpeed() {
+    runStore.doubleSpeed();
+  }
+  async halfSpeed() {
+    runStore.halfSpeed();
   }
 }
 </script>
