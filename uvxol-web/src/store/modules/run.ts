@@ -37,14 +37,22 @@ const run = (self: Run) => {
   self.runHandle = requestAnimationFrame(() => {
     run(self);
   });
+
+  if (self.renderer) {
+    self.time = self.renderer.getComponent(Clock)!.time;
+    self.speed = self.renderer.getComponent(Clock)!.timeScale;
+  }
 }
 
 @Module({ dynamic: true, name: 'runStore', store })
 class Run extends VuexModule {
   public world: World | undefined;
-  private renderer: Entity | undefined;
+  public renderer: Entity | undefined;
   public runHandle: number | undefined;
   public lastTime: number = 0;
+
+  public speed: number = 1;
+  public time: number = 0;
 
   static startEvents: (id?: number) => ActionEvent[] = id =>
     id
@@ -163,13 +171,15 @@ class Run extends VuexModule {
   @Mutation
   public async changeTimeScale(timeScale: number) {
     this.renderer!.getMutableComponent(Clock)!.timeScale = timeScale;
+    socket.send(JSON.stringify({ action: 'setPlaySpeed', speed: timeScale }))
   }
 
   @Mutation
   public async multTimeScale(timeScaleMult: number) {
-    this.renderer!.getMutableComponent(Clock)!.timeScale *= timeScaleMult;
+    const clock = this.renderer!.getMutableComponent(Clock)!;
+    clock.timeScale *= timeScaleMult;
+    socket.send(JSON.stringify({ action: 'setPlaySpeed', speed: clock.timeScale }))
   }
-
 }
 
 export default getModule(Run);

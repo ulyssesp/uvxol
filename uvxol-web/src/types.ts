@@ -38,8 +38,8 @@ export type ViewAction<T extends ActionType> = Action<T> & { active: boolean };
 export type EventRenderData = {
     id: number,
     name: string,
-    duration: number,
-    delay: number,
+    end: number,
+    start: number,
     state: "pending" | "active" | "finished"
 }
 

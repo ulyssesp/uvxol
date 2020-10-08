@@ -74,13 +74,13 @@ export class EventTrigger extends Component<{ eventId: number }> {
 export class RenderableEvent extends Component<EventRenderData> {
     id: number = -1;
     name: string = "";
-    delay: number = 0;
-    duration: number = 0;
+    start: number = 0;
+    end: number = 0;
     static schema = {
         id: { type: Types.Number },
         name: { type: Types.String },
-        delay: { type: Types.Number },
-        duration: { type: Types.Number },
+        start: { type: Types.Number },
+        end: { type: Types.Number },
     }
 }
 
@@ -318,8 +318,8 @@ export class EventTriggerSystem extends System {
                 .addComponent(RenderableEvent, {
                     id: eventData.id,
                     name: eventData.name,
-                    delay: eventData.delay,
-                    duration: eventData.duration
+                    start: on,
+                    end: off
                 })
                 .addComponent(TimeToggle, { on, off });
 
@@ -502,8 +502,8 @@ const createOrUpdateEventState = (
         events.push({
             id: renderableEvent.id,
             name: renderableEvent.name,
-            delay: renderableEvent.delay,
-            duration: renderableEvent.duration,
+            start: renderableEvent.start,
+            end: renderableEvent.end,
             state: state
         });
     }

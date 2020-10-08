@@ -11,9 +11,10 @@
           </v-tooltip>
         </v-list-item-title>
         <v-list-item-subtitle>
-          State: {{ event.state }}, Delay: {{ event.delay }}, Duration:
-          {{ event.duration }}</v-list-item-subtitle
-        >
+          State: {{ event.state }}, Start:
+          <TimeView v-bind:time="event.start" />, End:
+          <TimeView v-bind:time="event.end" />
+        </v-list-item-subtitle>
       </v-list-item-content>
     </v-list-item>
   </v-card>
@@ -21,12 +22,15 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from "vue-property-decorator";
-import { ActionEvent } from "../types";
+import { ActionEvent, EventRenderData } from "../types";
 import runStore from "@/store/modules/run";
+import TimeView from "./Time.vue";
 
-@Component
+@Component({
+  components: { TimeView },
+})
 export default class Event extends Vue {
-  @Prop({ required: true }) event!: ActionEvent;
+  @Prop({ required: true }) event!: EventRenderData;
   async chooseOption(id: number, actionId: number) {
     runStore.chooseVote([id, actionId]);
   }

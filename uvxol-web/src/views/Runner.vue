@@ -10,6 +10,8 @@
       <v-btn @click="doubleSpeed()">Speed up</v-btn>
       <v-btn @click="halfSpeed()">Speed down</v-btn>
       <v-btn @click="setSpeed(-1)">Reverse</v-btn>
+      <TimeView v-bind:time="time" />
+      <span class="text-h6">Speed: x{{ speed }}</span>
     </v-row>
     <v-row>
       <v-col>
@@ -78,6 +80,7 @@ import eventStore from "../store/modules/events";
 import actionStore from "../store/modules/actions";
 import Event from "../components/Event.vue";
 import ActionC from "../components/Action.vue";
+import TimeView from "../components/Time.vue";
 import * as sg from "fp-ts/lib/Semigroup";
 import * as fold from "fp-ts/lib/Foldable";
 import * as m from "fp-ts/lib/Monoid";
@@ -99,14 +102,13 @@ const stateOrdMap = {
 };
 
 @Component({
-  components: { ActionC, Event },
+  components: { ActionC, Event, TimeView },
 })
 export default class Runner extends Vue {
   chooseVoteOption = "";
   chosenVoteOptions: VoteOptionId[] = [];
   private err = "";
   get actionLogByZone() {
-    console.log(runStore.actionList);
     return pipe(
       runStore.actionList,
       na.fromArray,
@@ -208,6 +210,14 @@ export default class Runner extends Vue {
   }
   async setSpeed(speed: number) {
     runStore.setTimeScale(speed);
+  }
+
+  get speed() {
+    return runStore.speed;
+  }
+
+  get time() {
+    return Math.floor(runStore.time / 1000) * 1000;
   }
 }
 </script>
