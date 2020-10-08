@@ -31,15 +31,24 @@
           <v-col class="flex-grow-0 flex-shrink-1" cols="2">
             <v-dialog v-model="deleteDialog">
               <template v-slot:activator="{ on }">
-                <v-btn small color="error" dark class="mb-2" v-on="on">Delete visible</v-btn>
+                <v-btn small color="error" dark class="mb-2" v-on="on"
+                  >Delete visible</v-btn
+                >
               </template>
               <v-card>
                 <v-card-title>Confirm deletion</v-card-title>
-                <v-card-text>Are you sure you want to delete {{ currentActions.length }} items?</v-card-text>
+                <v-card-text
+                  >Are you sure you want to delete
+                  {{ currentActions.length }} items?</v-card-text
+                >
                 <v-card-actions>
                   <v-spacer></v-spacer>
-                  <v-btn text color="primary" @click="closeDeleteDialog">Uhh nvm</v-btn>
-                  <v-btn color="primary" @click="deleteConfirmed">Get rid of that shite</v-btn>
+                  <v-btn text color="primary" @click="closeDeleteDialog"
+                    >Uhh nvm</v-btn
+                  >
+                  <v-btn color="primary" @click="deleteConfirmed"
+                    >Get rid of that shite</v-btn
+                  >
                 </v-card-actions>
               </v-card>
             </v-dialog>
@@ -47,7 +56,9 @@
           <v-col class="flex-grow-0 flex-shrink-1" cols="1">
             <v-dialog v-model="dialog" @click:outside="closeDialog">
               <template v-slot:activator="{ on }">
-                <v-btn small color="primary" dark class="mb-2" v-on="on">New</v-btn>
+                <v-btn small color="primary" dark class="mb-2" v-on="on"
+                  >New</v-btn
+                >
               </template>
               <CreateAction
                 :actions="actions"
@@ -65,14 +76,16 @@
     <v-data-table
       :headers="headers"
       :items="flatactions"
-      :items-per-page="40"
+      :items-per-page="-1"
       class="elevation-1"
       :search="search"
       v-on:current-items="changeCurrentActions"
-      @click:row="item => editAction(item.id)"
     >
       <template v-slot:item.action="{ item }">
         <v-icon small @click="editAction(item.id)">mdi-pencil</v-icon>
+        <v-icon small @click="duplicateAction(item.id)"
+          >mdi-content-copy</v-icon
+        >
         <v-icon small @click="deleteAction(item.id)">mdi-delete</v-icon>
       </template>
     </v-data-table>
@@ -151,7 +164,7 @@ export default class ActionsList extends Vue {
   // Edit and open dialog
   editAction(id: number) {
     this.editingId = id;
-    this.editingAction = actionStore.actionsDict[id];
+    this.editingAction = mapAction(actionStore.actionsDict[id]);
     this.dialog = true;
   }
   // Remember to Reset the dialog!
@@ -179,6 +192,21 @@ export default class ActionsList extends Vue {
       .then(() => this.$emit("data-change"))
       .then(() => this.closeDeleteDialog())
       .catch((err) => (this.err = err));
+  }
+  duplicateAction(id: number) {
+    actionStore
+      .createOrUpdateAction(
+        Object.assign({}, actionStore.actionsDict[id], { id: undefined })
+      )
+      .then(() => (this.err = "success"))
+      .then(() => this.$emit("data-change"))
+      .catch((err: any) => {
+        try {
+          this.err = err.error.err.originalError.info.message;
+        } catch {
+          this.err = err;
+        }
+      });
   }
 }
 </script>

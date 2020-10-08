@@ -444,6 +444,7 @@ export class ActionRendererSystem extends System {
 
         this.queries.fileActions.added!.forEach(entity => {
             const renderableAction: RenderableFileAction = entity.getComponent<RenderableFileAction>(RenderableFileAction)!;
+            console.log(renderableAction.name);
             renderer.actions.push(renderableAction);
             if (renderer.socket) {
                 sendToTD(renderer.socket, renderableAction.eventId, true, renderableAction);

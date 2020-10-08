@@ -31,15 +31,24 @@
           <v-col class="flex-grow-0 flex-shrink-1" cols="2">
             <v-dialog v-model="deleteDialog">
               <template v-slot:activator="{ on }">
-                <v-btn small color="error" dark class="mb-2" v-on="on">Delete visible</v-btn>
+                <v-btn small color="error" dark class="mb-2" v-on="on"
+                  >Delete visible</v-btn
+                >
               </template>
               <v-card>
                 <v-card-title>Confirm deletion</v-card-title>
-                <v-card-text>Are you sure you want to delete {{ currentItems.length }} items?</v-card-text>
+                <v-card-text
+                  >Are you sure you want to delete
+                  {{ currentItems.length }} items?</v-card-text
+                >
                 <v-card-actions>
                   <v-spacer></v-spacer>
-                  <v-btn text color="primary" @click="closeDeleteDialog">Uhh nvm</v-btn>
-                  <v-btn color="primary" @click="deleteConfirmed">Get rid of that shite</v-btn>
+                  <v-btn text color="primary" @click="closeDeleteDialog"
+                    >Uhh nvm</v-btn
+                  >
+                  <v-btn color="primary" @click="deleteConfirmed"
+                    >Get rid of that shite</v-btn
+                  >
                 </v-card-actions>
               </v-card>
             </v-dialog>
@@ -64,15 +73,16 @@
     <v-data-table
       :headers="headers"
       :items="flatVoteOptions"
-      :items-per-page="40"
+      :items-per-page="-1"
       :search="search"
       @current-items="changeCurrentItems"
-      @click:row.self="item => editVoteOption(item.id)"
       class="elevation-1"
     >
       <template v-slot:item.action="{ item }">
         <v-icon small @click="editVoteOption(item.id)">mdi-pencil</v-icon>
-        <v-icon small @click="duplicateVoteOption(item.id)">mdi-content-copy</v-icon>
+        <v-icon small @click="duplicateVoteOption(item.id)"
+          >mdi-content-copy</v-icon
+        >
         <v-icon small @click="deleteVoteOption(item.id)">mdi-delete</v-icon>
       </template>
     </v-data-table>
@@ -181,6 +191,21 @@ export default class VoteOptionsList extends Vue {
   }
   refresh() {
     this.$emit("data-change");
+  }
+  duplicateVoteOption(id: number) {
+    voteOptionStore
+      .createOrUpdateVoteOption(
+        Object.assign({}, voteOptionStore.voteOptions[id], { id: undefined })
+      )
+      .then(() => (this.err = "success"))
+      .then(() => this.$emit("data-change"))
+      .catch((err: any) => {
+        try {
+          this.err = err.error.err.originalError.info.message;
+        } catch {
+          this.err = err;
+        }
+      });
   }
 }
 </script>

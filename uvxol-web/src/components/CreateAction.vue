@@ -42,7 +42,9 @@
             ></v-select>
           </v-col>
         </v-row>
-        <v-row v-if="editedAction.type === 'video' || editedAction.type === 'audio'">
+        <v-row
+          v-if="editedAction.type === 'video' || editedAction.type === 'audio'"
+        >
           <v-col cols="12">
             <v-text-field
               v-model="editedAction.filePath"
@@ -69,13 +71,13 @@
               chips
               deletable-chips
               :search-input.sync="dependsInput"
-              @change="dependsInput=''"
+              @change="dependsInput = ''"
             >
               <template v-slot:selection="data">
                 <v-chip
                   close
                   @click:close="data.splice(index, 1)"
-                  @click="editedAction.voteOptions.splice(data.index,1)"
+                  @click="editedAction.voteOptions.splice(data.index, 1)"
                 >
                   <span>{{ data.item.name }}</span>
                 </v-chip>
@@ -126,7 +128,6 @@ export default class CreateAction extends Vue {
     this.editedId = val;
   }
   submit() {
-    this.loading = true;
     actionStore
       .createOrUpdateAction(
         Object.assign({ id: this.updateId }, this.editedAction)
