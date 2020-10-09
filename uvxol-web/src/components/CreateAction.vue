@@ -45,12 +45,39 @@
         <v-row
           v-if="editedAction.type === 'video' || editedAction.type === 'audio'"
         >
-          <v-col cols="12">
+          <v-col cols="6">
             <v-text-field
               v-model="editedAction.filePath"
               label="File"
               placeholder="filename of content"
             ></v-text-field>
+          </v-col>
+          <v-col cols="6">
+            <v-autocomplete
+              :items="voteOptions"
+              item-text="name"
+              label="Vote Options Tags"
+              placeholder="chosen vote options appended to filepath"
+              v-model="editedAction.voteOptions"
+              item-value="id"
+              multiple
+              dense
+              flat
+              chips
+              deletable-chips
+              :search-input.sync="voteOptionInput"
+              @change="voteOptionInput = ''"
+            >
+              <template v-slot:selection="data">
+                <v-chip
+                  close
+                  @click:close="data.splice(index, 1)"
+                  @click="editedAction.voteOptions.splice(data.index, 1)"
+                >
+                  <span>{{ data.item.name }}</span>
+                </v-chip>
+              </template>
+            </v-autocomplete>
           </v-col>
         </v-row>
         <v-row v-if="editedAction.type === 'vote'">
@@ -70,8 +97,8 @@
               flat
               chips
               deletable-chips
-              :search-input.sync="dependsInput"
-              @change="dependsInput = ''"
+              :search-input.sync="voteOptionInput"
+              @change="voteOptionInput = ''"
             >
               <template v-slot:selection="data">
                 <v-chip
@@ -119,6 +146,7 @@ export default class CreateAction extends Vue {
   loading = false;
   editedAction = Object.assign({}, this.updateAction);
   editedId = this.updateId;
+  voteOptionInput = "";
   @Watch("updateAction")
   onEditAction(val: Action<ActionType>) {
     this.editedAction = Object.assign({}, val);

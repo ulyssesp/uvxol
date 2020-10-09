@@ -111,14 +111,13 @@ const defaultAction: EditableAction<"video"> = {
   location: "CONTENT",
   type: "video",
   filePath: "",
+  voteOptions: [],
 };
 
 const mapAction = (val: Action<ActionType> | undefined) =>
   val
     ? Object.assign({}, val, {
-        voteOptions: isVoteAction(val)
-          ? val.voteOptions.map((vo) => vo.id)
-          : undefined,
+        voteOptions: val.voteOptions.map((vo) => vo.id),
       })
     : defaultAction;
 
@@ -141,7 +140,7 @@ export default class ActionsList extends Vue {
     return array.map((a: Action<ActionType>) => ({
       ...a,
       voteOptions: array
-        .map((vo: VoteOption) => vo.name)(isVoteAction(a) ? a.voteOptions : [])
+        .map((vo: VoteOption) => vo.name)(a.voteOptions)
         .join(),
     }))(this.actions);
   }

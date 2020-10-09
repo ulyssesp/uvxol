@@ -30,6 +30,7 @@ export type VoteActionFields = {
 
 export type FileActionFields = {
     filePath: string;
+    voteOptions: VoteOption[];
 }
 
 export type ViewAction<T extends ActionType> = Action<T> & { active: boolean };
@@ -63,6 +64,15 @@ export type ActionType = 'audio' | 'video' | 'vote';
 export const ActionTypesMap: { [K in ActionType]: number } = { audio: 0, video: 1, vote: 2 };
 export const TypesActionMap: { [type: number]: ActionType } = { 0: 'audio', 1: 'video', 2: 'vote' };
 
+export type ActionRenderData<T extends ActionType> = {
+    type: T,
+    id: number,
+    eventId: number,
+    name: string,
+    zone: string,
+    location: string,
+} & (T extends "vote" ? { voteOptions: VoteOption[] } : { filePath: string });
+
 export type EventId = number;
 
 export interface ActionEvent {
@@ -85,9 +95,10 @@ export type EditableEvent = Omit<ActionEvent, "id" | "actions" | "triggers" | "d
 
 export type VoteOptionId = number;
 
-export interface VoteOption {
+export type VoteOption = {
     id: VoteOptionId;
     name: string;
+    shortname: string;
     text: string;
     preventions: VoteOption[];
     dependencies: VoteOption[];

@@ -2,17 +2,6 @@ import { EventId, ActionId, VoteOptionId, } from "./types";
 import { array } from 'fp-ts';
 import { resolve } from 'mssql/lib/connectionstring';
 
-// {
-// server: "uvxol-db-us.database.windows.net",
-// database: "uvxol-db",
-// user:"ulyssesp",
-// password: "",
-// port: 1433,
-// parseJSON: true,
-// options: {
-//     encrypt: true
-// }
-// }
 const sql = require('mssql')
 const dbConfig = Object.assign(resolve(process.env['sqldb_connection'], 'tedious'), { parseJSON: true })
 const pool = new sql.ConnectionPool(dbConfig)
@@ -33,19 +22,19 @@ export const getEvent: (id: EventId) => Promise<any> = async function (id) {
             (select ET.TriggerId as id from EventTriggers as ET
                 where (ET.EventId = E.EventId) for json auto) as triggers,
             (select Actions.ActionId as id, Zone as zone, Location as location, FilePath as filePath, Type as type, Name as name,
-                    (select VO.VoteOptionId as id, VO.Text as text, VO.Name as name from VoteOptions as VO 
+                    (select VO.VoteOptionId as id, VO.Text as text, VO.Name as name, VO.ShortName as shortname from VoteOptions as VO 
                         join ActionVoteOptions as AVO on (AVO.ActionId = Actions.ActionId and VO.VoteOptionId = AVO.VoteOptionId) 
                         for json auto) as voteOptions
                 from Actions join EventActions 
                 on (EventActions.EventId = E.EventId and Actions.ActionId = EventActions.ActionId) 
                 for json auto
             ) as actions,
-            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname
                 from VoteOptions as VO join EventVoteOptions as EVO
                 on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 0)
                 for json auto
             ) as dependencies,
-            (select VO.VoteOptionId as id, VO.Name as name, VO.Text  as text
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text  as text, VO.ShortName as shortname
                 from VoteOptions as VO join EventVoteOptions as EVO
                 on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 1)
                 for json auto
@@ -67,12 +56,12 @@ export const getEvents: () => Promise<any> = async function () {
                 on (EventActions.EventId = E.EventId and Actions.ActionId = EventActions.ActionId) 
                 for json auto
             ) as actions,
-            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname
                 from VoteOptions as VO join EventVoteOptions as EVO
                 on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 0)
                 for json auto
             ) as dependencies,
-            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname
                 from VoteOptions as VO join EventVoteOptions as EVO
                 on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 1)
                 for json auto
@@ -91,19 +80,19 @@ export const getEventsForTrigger: (triggerId: number) => Promise<any> = async fu
             (select ET.TriggerId as id from EventTriggers as ET
                 where (ET.EventId = E.EventId) for json auto) as triggers,
             (select Actions.ActionId as id, Zone as zone, Location as location, FilePath as filePath, Type as type, Name as name,
-                    (select VO.VoteOptionId as id, VO.Text as text, VO.Name as name from VoteOptions as VO 
+                    (select VO.VoteOptionId as id, VO.Text as text, VO.Name as name, VO.ShortName as shortname from VoteOptions as VO 
                         join ActionVoteOptions as AVO on (AVO.ActionId = Actions.ActionId and VO.VoteOptionId = AVO.VoteOptionId) 
                         for json auto) as voteOptions
                 from Actions join EventActions 
                 on (EventActions.EventId = E.EventId and Actions.ActionId = EventActions.ActionId) 
                 for json auto
             ) as actions,
-            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname
                 from VoteOptions as VO join EventVoteOptions as EVO
                 on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 0)
                 for json auto
             ) as dependencies,
-            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname
                 from VoteOptions as VO join EventVoteOptions as EVO
                 on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 1)
                 for json auto
@@ -122,19 +111,19 @@ export const getStartEvents: () => Promise<any> = async function () {
             (select ET.TriggerId as id from EventTriggers as ET
                 where (ET.EventId = E.EventId) for json auto) as triggers,
             (select Actions.ActionId as id, Zone as zone, Location as location, FilePath as filePath, Type as type, Name as name,
-                    (select VO.VoteOptionId as id, VO.Text as text, VO.Name as name from VoteOptions as VO 
+                    (select VO.VoteOptionId as id, VO.Text as text, VO.Name as name, VO.ShortName as shortname from VoteOptions as VO 
                         join ActionVoteOptions as AVO on (AVO.ActionId = Actions.ActionId and VO.VoteOptionId = AVO.VoteOptionId) 
                         for json auto) as voteOptions
                 from Actions join EventActions 
                 on (EventActions.EventId = E.EventId and Actions.ActionId = EventActions.ActionId) 
                 for json auto
             ) as actions,
-            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname
                 from VoteOptions as VO join EventVoteOptions as EVO
                 on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 0)
                 for json auto
             ) as dependencies,
-            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname
                 from VoteOptions as VO join EventVoteOptions as EVO
                 on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 1)
                 for json auto
@@ -149,7 +138,7 @@ export const getStartEvents: () => Promise<any> = async function () {
 export const getAction: (id: number) => Promise<any> = async function (id) {
     return connect.then(() => pool.request().input('id', sql.Int, id)
         .query`select A.ActionId as id, A.Name as name, A.Zone as zone, A.Location as location, A.FilePath as filePath, A.Type as type, 
-            (select VO.VoteOptionId as id, VO.Name as name from VoteOptions as VO 
+            (select VO.VoteOptionId as id, VO.Name as name, VO.ShortName as shortname from VoteOptions as VO 
                 join ActionVoteOptions as AVO
                 on (VO.VoteOptionId = AVO.VoteOptionId and AVO.ActionId = A.ActionId)
             for json auto) as voteOptions 
@@ -161,7 +150,7 @@ export const getAction: (id: number) => Promise<any> = async function (id) {
 export const getActions: () => Promise<any> = async function () {
     return connect.then(() =>
         pool.query`select A.ActionId as id, A.Name as name, A.Zone as zone, A.Location as location, A.FilePath as filePath, A.Type as type, 
-            (select VO.VoteOptionId as id, VO.Name as name from VoteOptions as VO 
+            (select VO.VoteOptionId as id, VO.Name as name, VO.ShortName as shortname from VoteOptions as VO 
                 join ActionVoteOptions as AVO
                 on (VO.VoteOptionId = AVO.VoteOptionId and AVO.ActionId = A.ActionId)
             for json auto) as voteOptions 
@@ -171,7 +160,7 @@ export const getActions: () => Promise<any> = async function () {
 
 export const getVoteOption = (id: number) =>
     connect.then(() => pool.request().input('id', sql.Int, id).query`
-        select VO.VoteOptionId as id, VO.Name as name, VO.Text as text,
+        select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname,
             (select VOD.DependencyId as id
                 from VoteOptionDependencies as VOD 
                 where (VOD.VoteOptionId = VO.VoteOptionId and VOD.Relationship = 0)
@@ -186,7 +175,7 @@ export const getVoteOption = (id: number) =>
 
 export const getVoteOptions = () =>
     connect.then(() => pool.query`
-        select VO.VoteOptionId as id, VO.Name as name, VO.Text as text,
+        select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname,
             (select VOD.DependencyId as id
                 from VoteOptionDependencies as VOD 
                 where (VOD.VoteOptionId = VO.VoteOptionId and VOD.Relationship = 0)
@@ -323,12 +312,13 @@ export const insertAction = async function (
         })
 }
 
-export const insertVoteOption = (name: string, text: string, dependencies: number[], preventions: number[]) =>
+export const insertVoteOption = (name: string, shortname: string, text: string, dependencies: number[], preventions: number[]) =>
     connect.then(() =>
         pool.request()
             .input('text', sql.Text, text)
             .input('name', sql.Text, name)
-            .query`insert into VoteOptions (Text, Name) output Inserted.VoteOptionId values (@text, @name)`)
+            .input('shortname', sql.Text, shortname)
+            .query`insert into VoteOptions (Text, Name, ShortName) output Inserted.VoteOptionId values (@text, @name, @shortname)`)
         .then(voteOptionResult => {
             const voteOptionId = voteOptionResult.recordset[0].VoteOptionId
 
@@ -548,6 +538,7 @@ export const updateAction = async function (
 export const updateVoteOption = async function (
     id: VoteOptionId,
     name: string,
+    shortname: string,
     text: string,
     dependencies: number[],
     preventions: number[]
@@ -558,7 +549,8 @@ export const updateVoteOption = async function (
                 .input('id', sql.Int, id)
                 .input('text', sql.Text, text)
                 .input('name', sql.Text, name)
-                .query`update VoteOptions set Text=@text, Name=@name where VoteOptionId=@id`)
+                .input('shortname', sql.Text, shortname)
+                .query`update VoteOptions set Text=@text, Name=@name, ShortName=@shortname where VoteOptionId=@id`)
         .then(() => deleteVoteOptionDependenciesByVoteOptionId(id))
         .then(voteOptionsResult => {
             const voteOptionId = id;

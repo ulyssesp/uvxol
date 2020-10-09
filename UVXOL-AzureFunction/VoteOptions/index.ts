@@ -23,6 +23,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     } else if (req.method === "POST") {
         body = await db.insertVoteOption(
             req.body.name,
+            req.body.shortname,
             req.body.text,
             req.body.dependencies,
             req.body.preventions
@@ -33,6 +34,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         body = await db.updateVoteOption(
             req.body.id,
             req.body.name,
+            req.body.shortname,
             req.body.text,
             req.body.dependencies,
             req.body.preventions

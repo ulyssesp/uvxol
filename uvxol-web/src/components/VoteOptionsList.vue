@@ -104,6 +104,7 @@ const mapVoteOption = (val: VoteOption): EditableVoteOption => ({
   text: val.text,
   preventions: val.preventions.map((p) => p.id),
   dependencies: val.dependencies.map((d) => d.id),
+  shortname: val.shortname,
 });
 
 const defaultVoteOption: EditableVoteOption = {
@@ -111,6 +112,7 @@ const defaultVoteOption: EditableVoteOption = {
   text: "",
   preventions: [],
   dependencies: [],
+  shortname: "",
 };
 
 @Component({
@@ -152,6 +154,7 @@ export default class VoteOptionsList extends Vue {
   headers = [
     { text: "name", value: "name" },
     { text: "text", value: "text" },
+    { text: "shortname", value: "shortname" },
     { text: "dependencies", value: "dependencies" },
     { text: "preventions", value: "preventions" },
     { text: "edit", value: "action" },

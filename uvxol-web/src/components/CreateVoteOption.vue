@@ -10,8 +10,18 @@
     <v-card-text>
       <v-container>
         <v-row>
-          <v-text-field v-model="editedVoteOption.name" label="Name"></v-text-field>
-          <v-text-field v-model="editedVoteOption.text" label="Text"></v-text-field>
+          <v-text-field
+            v-model="editedVoteOption.name"
+            label="Name"
+          ></v-text-field>
+          <v-text-field
+            v-model="editedVoteOption.shortname"
+            label="Short Name"
+          ></v-text-field>
+          <v-text-field
+            v-model="editedVoteOption.text"
+            label="Text"
+          ></v-text-field>
           <v-col>
             <v-autocomplete
               :items="voteOptions"
@@ -26,13 +36,13 @@
               chips
               deletable-chips
               :search-input.sync="dependsInput"
-              @change="dependsInput=''"
+              @change="dependsInput = ''"
             >
               <template v-slot:selection="data">
                 <v-chip
                   close
                   @click:close="data.splice(index, 1)"
-                  @click="editedVoteOption.dependencies.splice(data.index,1)"
+                  @click="editedVoteOption.dependencies.splice(data.index, 1)"
                 >
                   <span>{{ data.item.name }}</span>
                 </v-chip>
@@ -53,13 +63,15 @@
               chips
               deletable-chips
               :search-input.sync="preventsInput"
-              @change="preventsInput=''"
+              @change="preventsInput = ''"
             >
               <template v-slot:selection="data">
                 <v-chip
                   close
-                  @click:close="editedVoteOption.preventions.splice(data.index,1)"
-                  @click="editedVoteOption.preventions.splice(data.index,1)"
+                  @click:close="
+                    editedVoteOption.preventions.splice(data.index, 1)
+                  "
+                  @click="editedVoteOption.preventions.splice(data.index, 1)"
                 >
                   <span>{{ data.item.name }}</span>
                 </v-chip>
@@ -107,6 +119,7 @@ export default class CreateVoteOption extends Vue {
       .createOrUpdateVoteOption({
         id: this.updateId,
         name: this.editedVoteOption.name,
+        shortname: this.editedVoteOption.shortname,
         text: this.editedVoteOption.text,
         dependencies: this.editedVoteOption.dependencies,
         preventions: this.editedVoteOption.preventions,

@@ -70,6 +70,7 @@ import {
   ActionType,
   ViewAction,
   EventRenderData,
+  ActionRenderData,
 } from "../types";
 import { array, nonEmptyArray, option, show } from "fp-ts";
 import { pipe } from "fp-ts/lib/pipeable";
@@ -113,14 +114,22 @@ export default class Runner extends Vue {
       runStore.actionList,
       na.fromArray,
       option.map(
-        na.groupBy((a: Omit<Action<ActionType>, "type">) =>
-          a.zone.toLowerCase()
+        flow(
+          na.groupBy((a: Omit<ActionRenderData<ActionType>, "type">) =>
+            a.zone.toLowerCase()
+          ),
+          r.toArray,
+          array.sort(
+            ord.fromCompare<
+              [string, Omit<ActionRenderData<ActionType>, "type">[]]
+            >((a, b) => ord.ordString.compare(a[1][0].zone, b[1][0].zone))
+          )
         )
       ),
-      option.map(r.toArray),
-      option.map(array.reverse),
       option.getOrElse(
-        constant([] as [string, Array<Omit<Action<ActionType>, "type">>][])
+        constant(
+          [] as [string, Array<Omit<ActionRenderData<ActionType>, "type">>][]
+        )
       )
     );
   }

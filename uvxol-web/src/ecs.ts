@@ -1,7 +1,7 @@
 import { Component, Types, ArrayPropType, System, Entity, TagComponent, Not } from 'ecsy';
 import { getCompactableComposition } from 'fp-ts/lib/Compactable';
 import { extend } from 'vue/types/umd';
-import { Action, ActionType, ViewAction, VoteOptionId, VoteActionFields, FileActionFields, EventRenderData, VoteOption, isNotVoteAction, isVoteAction } from './types';
+import { Action, ActionType, ViewAction, VoteOptionId, VoteActionFields, FileActionFields, EventRenderData, VoteOption, ActionRenderData } from './types';
 import eventStore from "./store/modules/events";
 import actionStore from "./store/modules/actions";
 import voteOptionStore from "./store/modules/voteoptions";
@@ -84,7 +84,7 @@ export class RenderableEvent extends Component<EventRenderData> {
     }
 }
 
-export class RenderableVoteAction extends Component<Action<"vote"> & { eventId: number }> {
+export class RenderableVoteAction extends Component<ActionRenderData<"vote">> {
     id: number = -1;
     eventId: number = -1;
     name: string = "";
@@ -106,7 +106,7 @@ export class RenderableVoteAction extends Component<Action<"vote"> & { eventId: 
     }
 }
 
-export class RenderableFileAction extends Component<Action<"video"> & { eventId: number }> {
+export class RenderableFileAction extends Component<ActionRenderData<"video">> {
     id: number = -1;
     eventId: number = -1;
     name: string = "";
@@ -126,9 +126,17 @@ export class RenderableFileAction extends Component<Action<"video"> & { eventId:
     }
 }
 
-export class Renderer extends Component<{ events: EventRenderData[], actions: Action<ActionType>[], socket?: Socket }> {
+function isRenderableVoteAction(a: RenderableFileAction | RenderableVoteAction): a is RenderableVoteAction {
+    return a.type === "vote";
+}
+
+function isRenderableFileAction(a: RenderableFileAction | RenderableVoteAction): a is RenderableFileAction {
+    return a.type !== "vote";
+}
+
+export class Renderer extends Component<{ events: EventRenderData[], actions: ActionRenderData<ActionType>[], socket?: Socket }> {
     events: EventRenderData[] = [];
-    actions: Action<ActionType>[] = [];
+    actions: ActionRenderData<ActionType>[] = [];
     socket: Socket | undefined;
     static schema = {
         events: { type: Types.Ref },
@@ -299,6 +307,9 @@ export class EventTriggerSystem extends System {
             components: [EventTrigger, TimeToggle, Active, DependenciesSatisfied],
             listen: { added: true }
         },
+        chosenVoteOptions: {
+            components: [ChosenVoteOption]
+        },
         clock: {
             components: [Clock]
         }
@@ -306,6 +317,7 @@ export class EventTriggerSystem extends System {
 
     execute(delta: number, time: number): void {
         const clock = this.queries.clock.results[0].getComponent(Clock)!;
+        const chosenVoteOptions = new Set(this.queries.chosenVoteOptions.results.map(cvo => cvo.getComponent(ChosenVoteOption)!.id));
         this.queries.eventTriggers.added!.forEach(entity => {
             const eventTrigger = entity.getComponent(EventTrigger)!;
             const timeToggle = entity.getMutableComponent(TimeToggle)!;
@@ -326,20 +338,48 @@ export class EventTriggerSystem extends System {
             eventData.actions.forEach(a => {
                 const actionData = actionStore.actionsDict[a.id];
                 const entity = this.world.createEntity();
+                const baseRenderableAction = {
+                    id: actionData.id,
+                    eventId: eventData.id,
+                    name: actionData.name,
+                    zone: actionData.zone,
+                    location: actionData.location,
+                }
 
-                actionData.type === "vote"
-                    ? entity
-                        .addComponent(RenderableVoteAction, Object.assign({}, actionData, {
+                if (actionData.type === "vote") {
+                    entity
+                        .addComponent(RenderableVoteAction, Object.assign(baseRenderableAction, {
                             eventId: eventData.id,
                             type: "vote" as "vote",
                             voteOptions: (actionData as Action<"vote">).voteOptions!.map(vo => voteOptionStore.voteOptions[vo.id])
                         }))
                         .addComponent(TimeToggle, { on: on, off: off })
-                        .addComponent(VoteAction, { id: actionData.id, votes: (actionData as Action<"vote">).voteOptions.map(vo => vo.id) })
-                    : entity
-                        .addComponent(RenderableFileAction, Object.assign({}, actionData, { eventId: eventData.id, type: "video" as "video" }))
+                        .addComponent(VoteAction, {
+                            id: actionData.id,
+                            votes: (actionData as Action<"vote">).voteOptions.map(vo => vo.id)
+                        })
+                } else {
+                    const tags = actionData.voteOptions
+                        .filter(vo => chosenVoteOptions.has(vo.id))
+                        .map(vo => vo.shortname);
+                    entity
+                        .addComponent(
+                            RenderableFileAction,
+                            Object.assign(baseRenderableAction,
+                                {
+                                    eventId: eventData.id,
+                                    type: "video" as "video",
+                                    filePath:
+                                        (actionData as Action<"video">)
+                                            .filePath
+                                            .substring(0, (actionData as Action<"video">).filePath.indexOf('.')) +
+                                        (tags.length > 0 ? "-" : "") +
+                                        tags.join('-') +
+                                        ".mp4"
+                                },
+                            ))
                         .addComponent(TimeToggle, { on: on, off: off })
-
+                }
             });
 
             eventData.triggers.forEach(t => {
@@ -444,7 +484,6 @@ export class ActionRendererSystem extends System {
 
         this.queries.fileActions.added!.forEach(entity => {
             const renderableAction: RenderableFileAction = entity.getComponent<RenderableFileAction>(RenderableFileAction)!;
-            console.log(renderableAction.name);
             renderer.actions.push(renderableAction);
             if (renderer.socket) {
                 sendToTD(renderer.socket, renderableAction.eventId, true, renderableAction);
@@ -476,7 +515,7 @@ export class ActionRendererSystem extends System {
 }
 
 // Send an action to TD
-const sendToTD: (socket: Socket, actionEventId: number, active: boolean, action: Action<ActionType>) => void =
+const sendToTD: (socket: Socket, actionEventId: number, active: boolean, action: RenderableFileAction | RenderableVoteAction) => void =
     (socket, actionEventId, active, action) =>
         socket.send(JSON.stringify({
             eventId: actionEventId,
@@ -485,8 +524,8 @@ const sendToTD: (socket: Socket, actionEventId: number, active: boolean, action:
             zone: action.zone,
             location: action.location,
             active: active,
-            filePath: isNotVoteAction(action) ? action.filePath : undefined,
-            voteOptions: isVoteAction(action) ? action.voteOptions : undefined,
+            filePath: isRenderableFileAction(action) ? action.filePath : undefined,
+            voteOptions: isRenderableVoteAction(action) ? action.voteOptions : undefined,
         }));
 
 

@@ -61,7 +61,7 @@ class Run extends VuexModule {
 
   public chosenVoteOptions: number[] = [];
   public events: ty.EventRenderData[] = [];
-  public actionList: ty.Action<ty.ActionType>[] = [];
+  public actionList: ty.ActionRenderData<ty.ActionType>[] = [];
 
   @Action({ commit: 'restart', rawError: true })
   public async start(id?: number) {
