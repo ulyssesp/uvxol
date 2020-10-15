@@ -16,9 +16,9 @@ class Actions extends vmod.VuexModule {
 
   @vmod.Action({ commit: 'addAction', rawError: true })
   public async createOrUpdateAction(a: ServerType<Action<ActionType>> | ServerType<EditableAction<ActionType>>) {
-    return isServerAction(a) ?
+    return (isServerAction(a) ?
       api.putAction(a) :
-      api.postAction(a);
+      api.postAction(a)).then(res => res.json());
   }
 
   @vmod.Action({ commit: 'removeAction', rawError: true })

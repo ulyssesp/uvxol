@@ -6,6 +6,7 @@ import store from './store';
 
 Vue.config.productionTip = false;
 Vue.config.silent = true;
+Vue.config.performance = true
 
 new Vue({
   vuetify,

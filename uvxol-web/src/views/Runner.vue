@@ -10,7 +10,7 @@
       <v-btn @click="doubleSpeed()">Speed up</v-btn>
       <v-btn @click="halfSpeed()">Speed down</v-btn>
       <v-btn @click="setSpeed(-1)">Reverse</v-btn>
-      <TimeView v-bind:time="time" />
+      <TimeView v-bind:time="viewTime" />
       <span class="text-h6">Speed: x{{ speed }}</span>
     </v-row>
     <v-row>
@@ -225,7 +225,7 @@ export default class Runner extends Vue {
     return runStore.speed;
   }
 
-  get time() {
+  get viewTime() {
     return Math.floor(runStore.time / 1000) * 1000;
   }
 }
