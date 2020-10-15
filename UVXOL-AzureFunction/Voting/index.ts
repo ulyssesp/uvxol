@@ -1,6 +1,6 @@
 const httpTrigger = async function (context, req) {
   return {
-    "target": "newVote",
+    "target": "NewVote",
     "arguments": [req.body]
   };
 };

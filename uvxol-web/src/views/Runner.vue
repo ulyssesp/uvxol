@@ -225,7 +225,7 @@ export default class Runner extends Vue {
     return runStore.speed;
   }
 
-  get viewTime() {
+  get time() {
     return Math.floor(runStore.time / 1000) * 1000;
   }
 }

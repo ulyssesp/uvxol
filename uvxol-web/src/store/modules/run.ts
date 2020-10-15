@@ -2,11 +2,11 @@ import Vue from 'vue';
 import { Module, VuexModule, Action, Mutation, MutationAction, getModule } from 'vuex-module-decorators';
 import { ActionEvent, EventId, VoteOption, VoteOptionId, ActionId } from '@/types';
 import * as ty from '@/types';
+import * as signalR from "@aspnet/signalr";
 import store from '@/store';
 import eventStore from './events';
 import Socket from './socket';
 import { Entity, World } from 'ecsy';
-import * as signalR from "@microsoft/signalr";
 import {
   ChosenVoteOption,
   Clock,
@@ -33,7 +33,17 @@ import {
 const socket = new Socket();
 
 const voting = new signalR.HubConnectionBuilder()
-  .withUrl("localhost:7071")
+  .withUrl("http://localhost:7071/api")
+  .build()
+
+voting.on("NewVote", ({ voter, voteOptionId, actionId }: { voter: string, voteOptionId: number, actionId: number }) => {
+  console.log("received");
+  console.log(voter)
+  console.log(voteOptionId);
+  console.log(actionId);
+})
+
+voting.start().catch(err => console.error(err));
 
 const run = (self: Run) => {
   const current = performance.now();
@@ -164,6 +174,14 @@ class Run extends VuexModule {
 
   @Mutation
   public async addVote([v, a]: [VoteOptionId, ActionId]) {
+    fetch("http://localhost:7071/api/voting", {
+      method: "post",
+      body: JSON.stringify({
+        voter: "control",
+        voteOptionId: v,
+        actionId: a
+      })
+    })
     this.world!.createEntity()
       .addComponent(PendingVoteOption, { actionId: a, voteOptionId: v });
   }
