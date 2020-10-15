@@ -6,6 +6,7 @@ import store from '@/store';
 import eventStore from './events';
 import Socket from './socket';
 import { Entity, World } from 'ecsy';
+import * as signalR from "@microsoft/signalr";
 import {
   ChosenVoteOption,
   Clock,
@@ -30,6 +31,10 @@ import {
 
 
 const socket = new Socket();
+
+const voting = new signalR.HubConnectionBuilder()
+  .withUrl("localhost:7071")
+
 const run = (self: Run) => {
   const current = performance.now();
   self.world!.execute(current - self.lastTime, current);
