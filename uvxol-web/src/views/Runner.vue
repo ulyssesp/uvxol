@@ -108,6 +108,7 @@ const stateOrdMap = {
 export default class Runner extends Vue {
   chooseVoteOption = "";
   chosenVoteOptions: VoteOptionId[] = [];
+  viewTime = 0;
   private err = "";
   get actionLogByZone() {
     return pipe(
@@ -206,6 +207,13 @@ export default class Runner extends Vue {
   }
   protected mounted() {
     this.refresh();
+
+    const setTime = () => {
+      this.viewTime = Math.floor(runStore.time / 1000) * 1000;
+    };
+
+    // Hacky way to throttle updating the time view
+    setInterval(setTime, 1000);
   }
   async start() {
     this.refresh();
@@ -223,10 +231,6 @@ export default class Runner extends Vue {
 
   get speed() {
     return runStore.speed;
-  }
-
-  get time() {
-    return Math.floor(runStore.time / 1000) * 1000;
   }
 }
 </script>
