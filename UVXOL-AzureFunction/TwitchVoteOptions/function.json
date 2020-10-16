@@ -1,0 +1,27 @@
+{
+  "disabled": false,
+  "bindings": [
+    {
+      "authLevel": "anonymous",
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "methods": [
+        "post"
+      ],
+      "route": "twitchVoteOptions"
+    },
+    {
+      "type": "http",
+      "direction": "out",
+      "name": "res"
+    },
+    {
+      "type": "signalR",
+      "name": "$return",
+      "hubName": "voting",
+      "direction": "out"
+    }
+  ],
+  "scriptFile": "../dist/TwitchVoteOptions/index.js"
+}

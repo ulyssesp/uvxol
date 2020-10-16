@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "serve": "vue-cli-service serve --silent",
+    "serve": "vue-cli-service serve --silent --port 8081",
     "server": "set NODE_OPTIONS=\"--trace-warnings\" && ts-node-dev --respawn --project server/tsconfig.json server/serve.ts",
     "build": "vue-cli-service build",
     "watch": "vue-cli-service build --watch",

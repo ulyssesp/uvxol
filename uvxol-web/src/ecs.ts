@@ -347,17 +347,25 @@ export class EventTriggerSystem extends System {
                 }
 
                 if (actionData.type === "vote") {
+                    const voteOptions = (actionData as Action<"vote">).voteOptions!;
                     entity
                         .addComponent(RenderableVoteAction, Object.assign(baseRenderableAction, {
                             eventId: eventData.id,
                             type: "vote" as "vote",
-                            voteOptions: (actionData as Action<"vote">).voteOptions!.map(vo => voteOptionStore.voteOptions[vo.id])
+                            voteOptions: voteOptions.map(vo => voteOptionStore.voteOptions[vo.id])
                         }))
                         .addComponent(TimeToggle, { on: on, off: off })
                         .addComponent(VoteAction, {
                             id: actionData.id,
                             votes: (actionData as Action<"vote">).voteOptions.map(vo => vo.id)
                         })
+
+                    fetch("https://uvxol-httptrigger.azurewebsites.net/api/twitchVoteOptions", {
+                        method: "post",
+                        body: JSON.stringify({
+                            voteOptions: voteOptions.map(vo => Object.assign({ actionId: actionData.id }, vo))
+                        })
+                    })
                 } else {
                     const tags = actionData.voteOptions
                         .filter(vo => chosenVoteOptions.has(vo.id))

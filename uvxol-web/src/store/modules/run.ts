@@ -32,18 +32,9 @@ import {
 
 const socket = new Socket();
 
-const voting = new signalR.HubConnectionBuilder()
-  .withUrl("http://localhost:7071/api")
+const votingSignalR = new signalR.HubConnectionBuilder()
+  .withUrl("https://uvxol-httptrigger.azurewebsites.net/api")
   .build()
-
-voting.on("NewVote", ({ voter, voteOptionId, actionId }: { voter: string, voteOptionId: number, actionId: number }) => {
-  console.log("received");
-  console.log(voter)
-  console.log(voteOptionId);
-  console.log(actionId);
-})
-
-voting.start().catch(err => console.error(err));
 
 const run = (self: Run) => {
   const current = performance.now();
@@ -68,6 +59,8 @@ class Run extends VuexModule {
 
   public speed: number = 1;
   public time: number = 0;
+
+  private votingSetup = false;
 
   static startEvents: (id?: number) => ActionEvent[] = id =>
     id
@@ -144,6 +137,23 @@ class Run extends VuexModule {
         .addComponent(Clock);
     }
 
+    if (!this.votingSetup) {
+      const self = this;
+      console.log(this);
+      votingSignalR.on("NewVote", ({ voter, voteOptionId, actionId }: { voter: string, voteOptionId: number, actionId: number }) => {
+        console.log("received");
+        console.log(voter)
+        console.log(voteOptionId);
+        console.log(actionId);
+        if (voter !== "control") {
+          store.dispatch("chooseVote", [voteOptionId, actionId]);
+          // this.addVoteToWorld([voteOptionId, actionId]);
+        }
+      })
+
+      votingSignalR.start().catch(err => console.error(err));
+    }
+
     if (this.runHandle) {
       cancelAnimationFrame(this.runHandle);
     }
@@ -171,10 +181,9 @@ class Run extends VuexModule {
     this.runHandle = requestAnimationFrame(() => run(self));
   }
 
-
   @Mutation
   public async addVote([v, a]: [VoteOptionId, ActionId]) {
-    fetch("http://localhost:7071/api/voting", {
+    fetch("https://uvxol-httptrigger.azurewebsites.net/api/voting", {
       method: "post",
       body: JSON.stringify({
         voter: "control",
@@ -182,6 +191,7 @@ class Run extends VuexModule {
         actionId: a
       })
     })
+
     this.world!.createEntity()
       .addComponent(PendingVoteOption, { actionId: a, voteOptionId: v });
   }
