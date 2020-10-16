@@ -14,17 +14,8 @@ def onRemoveReplicant(comp, replicant):
 def onReplicate(comp, allOps, newOps, template, master):
 
   for i, c in enumerate(newOps):
-    zone = template[i, 0] 
-    c.name = zone + "_" + template[i, 1] + "_composite"
-    c.par.resolutionw = 1920
-    c.par.resolutionh = 1080
-    c.par.outputresolution = 9
-    c.par.outputaspect = 1
-    c.outputConnectors[0].connect(op(zone + "_composite"))
-
-    if zone == "HOUSE" and template[i,1] == "CONTENT":
-      op("house_autoswitch").outputConnectors[0].connect(c)
-
+    c.name = template[i, 0] + "_CONTENT_composite"
+    c.outputConnectors[0].connect(op('house_autoswitch'))
     pass
 
   return

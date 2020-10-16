@@ -8,21 +8,16 @@
 #
 
 def onRemoveReplicant(comp, replicant):
-
-  if op("playing_files")[replicant.name, 0] == None:
-    replicant.destroy()
+  replicant.destroy()
   return
 
 def onReplicate(comp, allOps, newOps, template, master):
-  audio = op("all_audio")
   for i, c in enumerate(allOps):
     name = template[i, 0].val.partition(".")[0]
+    c.par.Index = i
     if c in newOps:
       target_location = template[i, 1] + "_" + template[i, 2]
-      if c.par.File != template[i, 3]:
-        c.par.File = template[i, 3]
       target = op(target_location + "_composite")
       c.outputConnectors[0].connect(target)
-      c.outputConnectors[1].connect(audio)
 
   return

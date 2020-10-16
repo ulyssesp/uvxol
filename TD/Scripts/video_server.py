@@ -25,33 +25,50 @@ def onHTTPRequest(webServerDAT, request, response):
   return response
 
 def onWebSocketOpen(webServerDAT, client):
-	return
+  return
 
 def onWebSocketReceiveText(webServerDAT, client, data):
-	data = json.loads(data)
-	if data['action'] == "restart":
-		op("playing_files").clear()
-	elif 'filePath' in data:
-		playFile(data['zone'], data['location'], data['filePath'], data['active'])
-	return
+  data = json.loads(data)
+  if data['action'] == "restart":
+    op("playing_files").clear()
+    op("running_votes").clear()
+  elif data['action'] == 'setPlaySpeed':
+    op('PLAY_SPEED').par.value0 = data['speed']
+  elif 'filePath' in data:
+    playFile(data["actionId"], data["eventId"], data['zone'], data['location'], data['filePath'], data['active'])
+  elif data['action'] == "vote":
+    startVote(data["actionId"], data["eventId"], data['zone'], data['location'], data['voteOptions'], data['active'])
+  return
 
 def onWebSocketReceiveBinary(webServerDAT, client, data):
-	webServerDAT.webSocketSendBinary(client, data)
-	return
+  webServerDAT.webSocketSendBinary(client, data)
+  return
 
 def onServerStart(webServerDAT):
-	return
+  return
 
 def onServerStop(webServerDAT):
-	return
+  return
 
-def playFile(zone, location, filePath, active):
+def playFile(action_id, event_id, zone, location, filePath, active):
   playingFiles = op("playing_files")
   zone = zone.replace(' ', '_').upper();
   location = location.replace(' ', '_').upper()
-  rowId = zone + '_' + location + '_' + filePath
+  rowId = str(event_id) + "_" + str(action_id)
   
-  if not active:
+  if not active and playingFiles.row(rowId) != None:
     playingFiles.deleteRow(rowId)
-  else:
+  elif active:
     playingFiles.appendRow([rowId, zone, location, "../video/" + filePath, active])
+
+def startVote(event_id, action_id, zone, location, vote_options, active):
+  running_votes = op("running_votes")
+  zone = zone.replace(' ', '_').upper();
+  location = location.replace(' ', '_').upper()
+  rowId = str(event_id) + "_" + str(action_id)
+  vote_option_texts = list(map(lambda vo: vo['text'], vote_options))
+  
+  if not active and running_votes.row(rowId) != None:
+    running_votes.deleteRow(rowId)
+  elif active:
+    running_votes.appendRow([rowId, zone, location, active] + vote_option_texts)
