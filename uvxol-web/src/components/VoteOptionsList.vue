@@ -102,16 +102,16 @@ import voteoptions from "../store/modules/voteoptions";
 const mapVoteOption = (val: VoteOption): EditableVoteOption => ({
   name: val.name,
   text: val.text,
-  preventions: val.preventions.map((p) => p.id),
-  dependencies: val.dependencies.map((d) => d.id),
+  preventions: val.preventions,
+  dependencies: val.dependencies,
   shortname: val.shortname,
 });
 
 const defaultVoteOption: EditableVoteOption = {
   name: "",
   text: "",
-  preventions: [],
-  dependencies: [],
+  preventions: [] as number[],
+  dependencies: [] as number[],
   shortname: "",
 };
 

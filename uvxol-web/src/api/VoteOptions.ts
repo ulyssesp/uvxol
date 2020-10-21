@@ -24,7 +24,8 @@ export const mapVoteOption: (a: any) => VoteOption =
 
 export const postVoteOption: (name: string, shortname: string, text: string, dependencies: number[], preventions: number[])
     => Promise<any> = (name, shortname, text, dependencies, preventions) =>
-        fetch(voteOptionsUri, { method: 'POST', body: JSON.stringify({ name, shortname, text, dependencies, preventions }) });
+        fetch(voteOptionsUri, { method: 'POST', body: JSON.stringify({ name, shortname, text, dependencies, preventions }) })
+            .then(res => res.json());
 
 export const putVoteOption: (id: number, name: string, shortname: string, text: string, dependencies: number[], preventions: number[])
     => Promise<any> = (id, name, shortname, text, dependencies, preventions) =>

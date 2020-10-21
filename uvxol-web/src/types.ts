@@ -100,8 +100,8 @@ export type VoteOption = {
     name: string;
     shortname: string;
     text: string;
-    preventions: VoteOption[];
-    dependencies: VoteOption[];
+    preventions: VoteOptionId[];
+    dependencies: VoteOptionId[];
 }
 
 export type EditableVoteOption = Omit<VoteOption, "id" | "preventions" | "dependencies"> & {

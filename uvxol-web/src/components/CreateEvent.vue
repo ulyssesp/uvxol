@@ -46,13 +46,13 @@
               chips
               deletable-chips
               :search-input.sync="triggersInput"
-              @change="triggersInput=''"
+              @change="triggersInput = ''"
             >
               <template v-slot:selection="data">
                 <v-chip
                   close
                   @click:close="data.splice(index, 1)"
-                  @click="editedEvent.triggers.splice(data.index,1)"
+                  @click="editedEvent.triggers.splice(data.index, 1)"
                 >
                   <span>{{ data.item.name }}</span>
                 </v-chip>
@@ -73,13 +73,13 @@
               chips
               deletable-chips
               :search-input.sync="actionsInput"
-              @change="actionsInput=''"
+              @change="actionsInput = ''"
             >
               <template v-slot:selection="data">
                 <v-chip
                   close
                   @click:close="data.splice(index, 1)"
-                  @click="editedEvent.actions.splice(data.index,1)"
+                  @click="editedEvent.actions.splice(data.index, 1)"
                 >
                   <span>{{ data.item.name }}</span>
                 </v-chip>
@@ -102,13 +102,13 @@
               chips
               deletable-chips
               :search-input.sync="dependsInput"
-              @change="dependsInput=''"
+              @change="dependsInput = ''"
             >
               <template v-slot:selection="data">
                 <v-chip
                   close
                   @click:close="data.splice(index, 1)"
-                  @click="editedEvent.dependencies.splice(data.index,1)"
+                  @click="editedEvent.dependencies.splice(data.index, 1)"
                 >
                   <span>{{ data.item.name }}</span>
                 </v-chip>
@@ -129,13 +129,13 @@
               chips
               deletable-chips
               :search-input.sync="preventsInput"
-              @change="preventsInput=''"
+              @change="preventsInput = ''"
             >
               <template v-slot:selection="data">
                 <v-chip
                   close
-                  @click:close="editedEvent.preventions.splice(data.index,1)"
-                  @click="editedEvent.preventions.splice(data.index,1)"
+                  @click:close="data.splice(index, 1)"
+                  @click="editedEvent.preventions.splice(data.index, 1)"
                 >
                   <span>{{ data.item.name }}</span>
                 </v-chip>

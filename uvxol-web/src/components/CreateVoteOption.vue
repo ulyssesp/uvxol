@@ -68,9 +68,7 @@
               <template v-slot:selection="data">
                 <v-chip
                   close
-                  @click:close="
-                    editedVoteOption.preventions.splice(data.index, 1)
-                  "
+                  @click:close="data.splice(index, 1)"
                   @click="editedVoteOption.preventions.splice(data.index, 1)"
                 >
                   <span>{{ data.item.name }}</span>
