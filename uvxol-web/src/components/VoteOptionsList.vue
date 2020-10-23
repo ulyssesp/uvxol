@@ -73,7 +73,7 @@
     <v-data-table
       :headers="headers"
       :items="flatVoteOptions"
-      :items-per-page="-1"
+      :items-per-page="100"
       :search="search"
       @current-items="changeCurrentItems"
       class="elevation-1"

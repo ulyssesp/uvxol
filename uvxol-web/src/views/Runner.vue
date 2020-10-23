@@ -14,6 +14,9 @@
       <span class="text-h6">Speed: x{{ speed }}</span>
     </v-row>
     <v-row>
+      <span class="text-h6">Fun meter: {{ funMeter }}</span>
+    </v-row>
+    <v-row>
       <v-col>
         <v-autocomplete
           :items="voteOptions"
@@ -231,6 +234,10 @@ export default class Runner extends Vue {
 
   get speed() {
     return runStore.speed;
+  }
+
+  get funMeter() {
+    return runStore.funMeter;
   }
 }
 </script>

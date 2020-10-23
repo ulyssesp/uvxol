@@ -112,6 +112,15 @@
             </v-autocomplete>
           </v-col>
         </v-row>
+        <v-row v-if="editedAction.type === 'funMeter'">
+          <v-col cols="6">
+            <v-text-field
+              v-model="editedAction.funMeterValue"
+              label="Fun Meter Value"
+              placeholder="The fun meter value of this event"
+            ></v-text-field>
+          </v-col>
+        </v-row>
       </v-container>
     </v-card-text>
     <v-card-actions>
@@ -140,7 +149,7 @@ export default class CreateAction extends Vue {
   @Prop({ required: true }) voteOptions!: VoteOption[];
   @Prop() readonly updateId!: any;
   @Prop() readonly updateAction!: any;
-  actionTypes = ["audio", "video", "vote"];
+  actionTypes = ["audio", "video", "vote", "funMeter"];
   err = "";
   type = "video";
   loading = false;

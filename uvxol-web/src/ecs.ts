@@ -1,7 +1,7 @@
 import { Component, Types, ArrayPropType, System, Entity, TagComponent, Not } from 'ecsy';
 import { getCompactableComposition } from 'fp-ts/lib/Compactable';
 import { extend } from 'vue/types/umd';
-import { Action, ActionType, ViewAction, VoteOptionId, VoteActionFields, FileActionFields, EventRenderData, VoteOption, ActionRenderData } from './types';
+import { Action, ActionType, ViewAction, VoteOptionId, VoteActionFields, FileActionFields, EventRenderData, VoteOption, ActionRenderData, actionVoteOptions } from './types';
 import eventStore from "./store/modules/events";
 import actionStore from "./store/modules/actions";
 import voteOptionStore from "./store/modules/voteoptions";
@@ -126,6 +126,26 @@ export class RenderableFileAction extends Component<ActionRenderData<"video">> {
     }
 }
 
+export class RenderableFunMeterAction extends Component<ActionRenderData<"funMeter">> {
+    id: number = -1;
+    eventId: number = -1;
+    name: string = "";
+    zone: string = "";
+    location: string = "";
+    type: "funMeter" = "funMeter";
+    funMeterValue: number = 0;
+
+    static schema = {
+        id: { type: Types.Number },
+        name: { type: Types.String },
+        zone: { type: Types.String },
+        location: { type: Types.String },
+        type: { type: Types.String },
+        eventId: { type: Types.Number },
+        funMeterValue: { type: Types.Number },
+    }
+}
+
 function isRenderableVoteAction(a: RenderableFileAction | RenderableVoteAction): a is RenderableVoteAction {
     return a.type === "vote";
 }
@@ -143,6 +163,14 @@ export class Renderer extends Component<{ events: EventRenderData[], actions: Ac
         actions: { type: Types.Ref },
         socket: { type: Types.Ref }
     }
+}
+
+export class FunMeter extends Component<{ value: number }> {
+    value: number = 0;
+    static schema = {
+        value: { type: Types.Number }
+    }
+
 }
 
 export class ResetComponent extends TagComponent { };
@@ -309,14 +337,10 @@ export class EventTriggerSystem extends System {
         },
         chosenVoteOptions: {
             components: [ChosenVoteOption]
-        },
-        clock: {
-            components: [Clock]
         }
     }
 
     execute(delta: number, time: number): void {
-        const clock = this.queries.clock.results[0].getComponent(Clock)!;
         const chosenVoteOptions = new Set(this.queries.chosenVoteOptions.results.map(cvo => cvo.getComponent(ChosenVoteOption)!.id));
         this.queries.eventTriggers.added!.forEach(entity => {
             const eventTrigger = entity.getComponent(EventTrigger)!;
@@ -366,8 +390,8 @@ export class EventTriggerSystem extends System {
                             voteOptions: voteOptions.map(vo => Object.assign({ actionId: actionData.id }, vo))
                         })
                     })
-                } else {
-                    const tags = actionData.voteOptions
+                } else if (actionData.type === "video") {
+                    const tags = actionVoteOptions(actionData)
                         .filter(vo => chosenVoteOptions.has(vo.id))
                         .map(vo => vo.shortname);
                     entity
@@ -387,6 +411,18 @@ export class EventTriggerSystem extends System {
                                 },
                             ))
                         .addComponent(TimeToggle, { on: on, off: off })
+                } else if (actionData.type === "funMeter") {
+                    entity
+                        .addComponent(
+                            RenderableFunMeterAction,
+                            Object.assign(baseRenderableAction,
+                                {
+                                    eventId: eventData.id,
+                                    type: "funMeter" as "funMeter",
+                                    funMeterValue: (actionData as Action<"funMeter">).funMeterValue
+                                },
+                            ))
+                        .addComponent(TimeToggle, { on: on, off: Number.MAX_VALUE })
                 }
             });
 
@@ -425,13 +461,9 @@ export class EventRendererSystem extends System {
             listen: {
                 added: true,
             }
-        },
-        clock: {
-            components: [Clock]
         }
     }
     execute(delta: number, time: number): void {
-        const clock = this.queries.clock.results[0].getComponent(Clock)!;
         const events = this.queries.renderer.results[0].getMutableComponent(Renderer)!.events
         this.queries.pendingEvents.results!.forEach(entity => {
             const renderableEvent: RenderableEvent = entity.getComponent<RenderableEvent>(RenderableEvent)!;
@@ -474,13 +506,25 @@ export class ActionRendererSystem extends System {
                 removed: true
             }
         },
+        funMeterActions: {
+            components: [RenderableFunMeterAction, Active],
+            listen: {
+                added: true,
+                removed: true
+            }
+        },
         renderer: {
             components: [Renderer]
+        },
+        funMeter: {
+            components: [FunMeter]
         }
+
     }
 
     execute(delta: number, time: number): void {
         const renderer = this.queries.renderer.results[0].getComponent(Renderer)!;
+        const funMeter = this.queries.funMeter.results[0].getMutableComponent(FunMeter)!;
 
         this.queries.voteActions.added!.forEach(entity => {
             const renderableAction: RenderableVoteAction = entity.getComponent<RenderableVoteAction>(RenderableVoteAction)!;
@@ -496,6 +540,11 @@ export class ActionRendererSystem extends System {
             if (renderer.socket) {
                 sendToTD(renderer.socket, renderableAction.eventId, true, renderableAction);
             }
+        });
+
+        this.queries.funMeterActions.added!.forEach(entity => {
+            const renderableAction: RenderableFunMeterAction = entity.getComponent<RenderableFunMeterAction>(RenderableFunMeterAction)!;
+            funMeter.value += renderableAction.funMeterValue;
         });
 
         this.queries.voteActions.removed!.forEach(entity => {
@@ -518,6 +567,14 @@ export class ActionRendererSystem extends System {
             if (renderer.socket) {
                 sendToTD(renderer.socket, renderableAction.eventId, false, renderableAction);
             }
+        });
+
+        this.queries.funMeterActions.removed!.forEach(entity => {
+            const renderableAction: RenderableFunMeterAction =
+                entity.hasRemovedComponent(RenderableFunMeterAction)
+                    ? entity.getRemovedComponent<RenderableFunMeterAction>(RenderableFunMeterAction)!
+                    : entity.getComponent<RenderableFunMeterAction>(RenderableFunMeterAction)!;
+            funMeter.value -= renderableAction.funMeterValue;
         });
     }
 }

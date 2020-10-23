@@ -2,10 +2,14 @@ export default class Socket {
   private readonly SERVER_URL = "localhost";
   private readonly SERVER_PORT = 9981
   timeout: number = 1000;
-  socket: WebSocket;
+  socket: WebSocket | undefined;
   connected: boolean = false;
 
   constructor() {
+    this.connect();
+  }
+
+  connect() {
     this.socket = new WebSocket(`ws://${this.SERVER_URL}:${this.SERVER_PORT}`);
     this.socket.addEventListener('open', this.connectHandler.bind(this));
     this.socket.addEventListener('close', this.closeHandler.bind(this));
@@ -13,7 +17,7 @@ export default class Socket {
   }
 
   connectHandler() {
-    this.socket.send("hi!");
+    this.socket!.send("hi!");
     this.connected = true;
   }
 
@@ -22,14 +26,19 @@ export default class Socket {
   }
 
   send(message: string) {
-    if (this.connected) {
+    if (this.connected && this.socket) {
       this.socket.send(message + "\n");
     } else {
-      console.error("Not connected");
+      console.error("Not connected, reconnecting in 1 second");
+      setTimeout(() => {
+        this.connect();
+      }, 1000);
     }
   }
 
   dispose() {
-    this.socket.close();
+    if (this.socket) {
+      this.socket.close();
+    }
   }
 }

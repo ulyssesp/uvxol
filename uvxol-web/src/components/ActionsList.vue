@@ -76,7 +76,7 @@
     <v-data-table
       :headers="headers"
       :items="flatactions"
-      :items-per-page="-1"
+      :items-per-page="100"
       class="elevation-1"
       :search="search"
       v-on:current-items="changeCurrentActions"
@@ -100,6 +100,9 @@ import {
   ActionType,
   isVoteAction,
   EditableAction,
+  isFunMeterAction,
+  isFileAction,
+  actionVoteOptions,
 } from "../types";
 import { array } from "fp-ts";
 import actionStore from "../store/modules/actions";
@@ -117,7 +120,7 @@ const defaultAction: EditableAction<"video"> = {
 const mapAction = (val: Action<ActionType> | undefined) =>
   val
     ? Object.assign({}, val, {
-        voteOptions: val.voteOptions.map((vo) => vo.id),
+        voteOptions: actionVoteOptions(val),
       })
     : defaultAction;
 
@@ -140,7 +143,7 @@ export default class ActionsList extends Vue {
     return array.map((a: Action<ActionType>) => ({
       ...a,
       voteOptions: array
-        .map((vo: VoteOption) => vo.name)(a.voteOptions)
+        .map((vo: VoteOption) => vo.name)(actionVoteOptions(a))
         .join(),
     }))(this.actions);
   }

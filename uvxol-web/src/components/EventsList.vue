@@ -75,7 +75,7 @@
     <v-data-table
       :headers="headers"
       :items="flatevents"
-      :items-per-page="-1"
+      :items-per-page="100"
       class="elevation-1"
       :search="search"
       @current-items="changeCurrentItems"

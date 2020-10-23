@@ -26,7 +26,7 @@ import {
   PendingVoteOption,
   Active,
   Pending,
-  Finished, TallyVotes, VoteAction, DependenciesSatisfied, EventRendererSystem, ActionRendererSystem
+  Finished, TallyVotes, VoteAction, DependenciesSatisfied, EventRendererSystem, ActionRendererSystem, FunMeter, RenderableFunMeterAction
 } from '@/ecs';
 
 
@@ -47,6 +47,7 @@ const run = (self: Run) => {
   if (self.renderer) {
     self.time = self.renderer.getComponent(Clock)!.time;
     self.speed = self.renderer.getComponent(Clock)!.timeScale;
+    self.funMeter = self.renderer.getComponent(FunMeter)!.value;
   }
 }
 
@@ -59,6 +60,8 @@ class Run extends VuexModule {
 
   public speed: number = 1;
   public time: number = 0;
+
+  public funMeter: number = 0;
 
   private votingSetup = false;
 
@@ -123,6 +126,8 @@ class Run extends VuexModule {
         .registerComponent(Active)
         .registerComponent(Pending)
         .registerComponent(Finished)
+        .registerComponent(FunMeter)
+        .registerComponent(RenderableFunMeterAction)
         .registerSystem(TickClock)
         .registerSystem(DependenciesTriggerSystem)
         .registerSystem(TimeToggleSystem)
@@ -134,7 +139,8 @@ class Run extends VuexModule {
 
       this.renderer = this.world.createEntity()
         .addComponent(Renderer, { events: this.events, actions: this.actionList, socket })
-        .addComponent(Clock);
+        .addComponent(Clock)
+        .addComponent(FunMeter);
     }
 
     if (!this.votingSetup) {
