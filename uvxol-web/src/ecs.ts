@@ -211,8 +211,6 @@ export class Reset extends System {
                 renderer.socket.send(JSON.stringify({ action: "restart" }));
             }
 
-
-
             this.queries.reset.added![0].remove();
         }
     }
@@ -394,6 +392,8 @@ export class EventTriggerSystem extends System {
                     const tags = actionVoteOptions(actionData)
                         .filter(vo => chosenVoteOptions.has(vo.id))
                         .map(vo => vo.shortname);
+                    const filePath = (actionData as Action<"video">).filePath;
+                    const extIndex = filePath.indexOf('.');
                     entity
                         .addComponent(
                             RenderableFileAction,
@@ -402,9 +402,7 @@ export class EventTriggerSystem extends System {
                                     eventId: eventData.id,
                                     type: "video" as "video",
                                     filePath:
-                                        (actionData as Action<"video">)
-                                            .filePath
-                                            .substring(0, (actionData as Action<"video">).filePath.indexOf('.')) +
+                                        filePath.substring(0, extIndex >= 0 ? extIndex : filePath.length) +
                                         (tags.length > 0 ? "-" : "") +
                                         tags.join('-') +
                                         ".mp4"

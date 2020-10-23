@@ -4,6 +4,7 @@ export default class Socket {
   timeout: number = 1000;
   socket: WebSocket | undefined;
   connected: boolean = false;
+  connectTimeout: number | undefined;
 
   constructor() {
     this.connect();
@@ -17,7 +18,6 @@ export default class Socket {
   }
 
   connectHandler() {
-    this.socket!.send("hi!");
     this.connected = true;
   }
 
@@ -30,9 +30,12 @@ export default class Socket {
       this.socket.send(message + "\n");
     } else {
       console.error("Not connected, reconnecting in 1 second");
-      setTimeout(() => {
-        this.connect();
-      }, 1000);
+      if (!this.connectTimeout) {
+        this.connectTimeout = setTimeout(() => {
+          this.connectTimeout = undefined;
+          this.connect();
+        }, 1000) as unknown as number;
+      }
     }
   }
 
