@@ -15,6 +15,23 @@
 </template>
 
 <script>
+const zoneChannelId = {
+  FILM: 601433045,
+  STAGE: 601434020,
+  HOUSE: 601435410,
+  PANOPTICON: 443816645,
+};
+
+const authResult = {
+  channelId: undefined,
+  userId: undefined,
+};
+
+Twitch.ext.onAuthorized((authCallback) => {
+  console.log(authCallback.channelId);
+  Object.assign(authResult, authCallback);
+});
+
 const votingSignalR = new signalR.HubConnectionBuilder()
   .withUrl("https://uvxol-httptrigger.azurewebsites.net/api")
   .build();
@@ -30,21 +47,21 @@ export default {
   },
   mounted: function () {
     this.$nextTick(function () {
-      votingSignalR.on("NewVoteOptions", ({ voteOptions }) => {
-        console.log(voteOptions);
-        this.voteOptions = voteOptions;
+      votingSignalR.on("NewVoteOptions", ({ zone, voteOptions }) => {
+        if (zoneChannelId[zone] == authResult.channelId) {
+          this.voteOptions = voteOptions;
+        }
       });
       votingSignalR.start().catch((err) => console.error(err));
     });
   },
   methods: {
     vote: function (id, actionId) {
-      console.log(id);
-      console.log(actionId);
+      console.log(authResult.userId);
       fetch("https://uvxol-httptrigger.azurewebsites.net/api/voting", {
         method: "post",
         body: JSON.stringify({
-          voter: "twitch",
+          voter: authResult.userId,
           voteOptionId: id,
           actionId: actionId,
         }),

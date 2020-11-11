@@ -4,7 +4,7 @@
       <h4>Status: {{ err }}</h4>
     </v-row>
     <v-row>
-      <v-btn @click="start()">Start</v-btn>
+      <v-btn @click="refresh()">Start</v-btn>
       <v-btn @click="setSpeed(1)">Play</v-btn>
       <v-btn @click="setSpeed(0)">Pause</v-btn>
       <v-btn @click="doubleSpeed()">Speed up</v-btn>
@@ -195,21 +195,22 @@ export default class Runner extends Vue {
   }
   private refresh() {
     this.err = "loading";
-    const startId =
-      !this.$route.params.id || this.$route.params.id === ""
-        ? undefined
-        : parseInt(this.$route.params.id as string);
-    Promise.all([
-      voteOptionStore.getVoteOptions(),
-      eventStore.getEvents(),
-      actionStore.getActions(),
-    ])
-      .catch((e: any) => (this.err = e))
-      .then(() => (this.err = "loaded"))
-      .then(() => runStore.restart(startId));
+    runStore.restart();
+    // const startId =
+    //   !this.$route.params.id || this.$route.params.id === ""
+    //     ? undefined
+    //     : parseInt(this.$route.params.id as string);
+    // Promise.all([
+    //   voteOptionStore.getVoteOptions(),
+    //   eventStore.getEvents(),
+    //   actionStore.getActions(),
+    // ])
+    //   .catch((e: any) => (this.err = e))
+    //   .then(() => (this.err = "loaded"))
+    //   .then(() => runStore.restart(startId));
   }
   protected mounted() {
-    this.refresh();
+    this.start();
 
     const setTime = () => {
       this.viewTime = Math.floor(runStore.time / 1000) * 1000;
@@ -219,7 +220,7 @@ export default class Runner extends Vue {
     setInterval(setTime, 1000);
   }
   async start() {
-    this.refresh();
+    runStore.start();
   }
 
   async doubleSpeed() {

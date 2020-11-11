@@ -1,5 +1,3 @@
-import Socket from './store/modules/socket';
-
 type ArrayType<A> = A extends Array<infer U> ? U : never;
 type RequireId<T> =
     Exclude<{ [K in keyof T]:
@@ -126,4 +124,28 @@ export type EditableVoteOption = Omit<VoteOption, "id" | "preventions" | "depend
 
 export interface Response {
     message: string;
+}
+
+export type ClientEvent = {
+    type: "replaceState",
+    events: EventRenderData[],
+    actions: ActionRenderData<ActionType>[],
+    time: number,
+    speed: number
+} | {
+    type: "speedChange",
+    speed: number,
+    time: number,
+} | {
+    type: "addEvent",
+    data: EventRenderData
+} | {
+    type: "removeEvent",
+    id: number
+} | {
+    type: "addAction",
+    data: ActionRenderData<ActionType>
+} | {
+    type: "removeAction",
+    id: number
 }

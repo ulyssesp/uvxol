@@ -1,0 +1,24 @@
+{
+  "name": "uvxol-server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "BSD-3",
+  "scripts": {
+    "run-ts": "ts-node ./src/index.ts",
+    "watch": "ts-node-dev ./src/index.ts --project ./tsconfig.json",
+    "build": "tsc && pkg -t node12-win dist/index.js"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "^2.5.7",
+    "@types/ws": "^7.2.9",
+    "ts-node": "^9.0.0",
+    "ts-node-dev": "^1.0.0",
+    "typescript": "^4.0.5"
+  },
+  "dependencies": {
+    "@microsoft/signalr": "^3.1.9",
+    "ecsy": "^0.4.2",
+    "node-fetch": "^2.6.1",
+    "ws": "^7.3.1"
+  }
+}

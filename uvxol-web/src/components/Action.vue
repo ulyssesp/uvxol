@@ -37,7 +37,7 @@ import runStore from "@/store/modules/run";
 export default class ActionView extends Vue {
   @Prop({ required: true }) action!: ViewAction<ActionType>;
   async chooseOption(id: number) {
-    runStore.chooseVote([id, this.action.id]);
+    runStore.chooseVote(["control", id, this.action.id]);
   }
 }
 </script>

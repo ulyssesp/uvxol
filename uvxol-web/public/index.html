@@ -12,18 +12,22 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@aspnet/signalr@1.1.2/dist/browser/signalr.js"></script>
   <style type="text/css">
-    #app {
-      overflow-x: scroll;
-    }
-
-    .v-application .v-content {
-      max-width: 1000%;
-      min-width: min-content;
+    body {
+      width: 100%;
+      height: 100%;
     }
 
     .v-application .v-content .v-content-wrapper {
       max-width: 1000%;
       min-width: min-content;
+      overflow: scroll;
+      height: 100%;
+    }
+
+    .row.flex-nowrap {
+      overflow: scroll;
+      max-width: 1000%;
+      height: 70vh;
     }
   </style>
 </head>

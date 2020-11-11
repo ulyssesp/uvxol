@@ -32,7 +32,7 @@ import TimeView from "./Time.vue";
 export default class Event extends Vue {
   @Prop({ required: true }) event!: EventRenderData;
   async chooseOption(id: number, actionId: number) {
-    runStore.chooseVote([id, actionId]);
+    runStore.chooseVote(["control", id, actionId]);
   }
 }
 </script>
