@@ -4,9 +4,12 @@
     <p>Vote for stuff!</p>
     <ul>
       <li
+        class="voteoption"
         v-for="voteOption in voteOptions"
         :key="voteOption.id"
         v-on:click="vote(voteOption.id, voteOption.actionId)"
+        @click.stop
+        @click.prevent
       >
         {{ voteOption.name }}
       </li>
@@ -28,13 +31,23 @@ const authResult = {
 };
 
 Twitch.ext.onAuthorized((authCallback) => {
-  console.log(authCallback.channelId);
   Object.assign(authResult, authCallback);
+  fetch("https://uvxol-httptrigger.azurewebsites.net/api/voting", {
+    method: "post",
+    body: JSON.stringify({
+      voter: authResult.userId,
+      voteOptionId: id,
+      actionId: actionId,
+    }),
+  });
 });
 
 const votingSignalR = new signalR.HubConnectionBuilder()
   .withUrl("https://uvxol-httptrigger.azurewebsites.net/api")
   .build();
+
+votingSignalR.on("Boop", () => console.log("booped"));
+
 export default {
   name: "TwitchOverlay",
   props: {
@@ -42,7 +55,11 @@ export default {
   },
   data: function () {
     return {
-      voteOptions: [],
+      voteOptions: [
+        { name: "get", id: 0 },
+        { name: "that", id: 1 },
+        { name: "bread", id: 2 },
+      ],
     };
   },
   mounted: function () {
@@ -52,12 +69,29 @@ export default {
           this.voteOptions = voteOptions;
         }
       });
-      votingSignalR.start().catch((err) => console.error(err));
+      if (votingSignalR.state === signalR.HubConnectionState.Disconnected) {
+        votingSignalR
+          .start()
+          .catch((err) => console.error(err))
+          .then(() => {
+            console.log("connected");
+            votingSignalR.send("Boop");
+            votingSignalR
+              .invoke("Boop")
+              .catch((err) => console.error(err))
+              .then(() => console.log("booper"));
+            votingSignalR.invoke("NewVote", {
+              voter: "hi",
+              voteOptionId: 0,
+              actionId: 0,
+            });
+            // votingSignalR.invoke("NewVote");
+          });
+      }
     });
   },
   methods: {
     vote: function (id, actionId) {
-      console.log(authResult.userId);
       fetch("https://uvxol-httptrigger.azurewebsites.net/api/voting", {
         method: "post",
         body: JSON.stringify({
@@ -86,5 +120,15 @@ li {
 }
 a {
   color: #42b983;
+}
+.voteoption {
+  cursor: pointer;
+}
+.voteoption:hover {
+  color: red;
+}
+
+.voteoption:active {
+  color: blue;
 }
 </style>

@@ -19,7 +19,7 @@ export type EditableAction<T extends ActionType> = {
     name: string;
     zone: string;
     location: string;
-} & (T extends "vote" ? VoteActionFields : T extends 'funMeter' ? FunMeterActionFields : FileActionFields);
+} & (T extends "vote" ? VoteActionFields : T extends 'meter' ? MeterActionFields : FileActionFields);
 
 export type VoteActionFields = {
     voteOptions: VoteOption[];
@@ -31,8 +31,9 @@ export type FileActionFields = {
     voteOptions: VoteOption[];
 }
 
-export type FunMeterActionFields = {
-    funMeterValue: number;
+export type MeterActionFields = {
+    meterType: "fun" | "budget";
+    value: number;
 }
 
 export type ViewAction<T extends ActionType> = Action<T> & { active: boolean };
@@ -61,8 +62,12 @@ export function actionVoteOptions(val: EditableAction<ActionType>): VoteOption[]
     return isVoteAction(val) || isFileAction(val) ? val.voteOptions : [];
 }
 
-export function isFunMeterAction(a: EditableAction<ActionType>): a is EditableAction<"funMeter"> {
-    return a.type === "funMeter";
+export function isMeterAction(a: EditableAction<ActionType>): a is EditableAction<"meter"> {
+    return a.type === "meter";
+}
+
+export function isServerMeterAction(a: ServerType<EditableAction<ActionType>>): a is ServerType<EditableAction<"meter">> {
+    return a.type === "meter";
 }
 
 export function isNotVoteAction(a: EditableAction<ActionType>): a is EditableAction<Exclude<ActionType, "vote">> {
@@ -73,9 +78,9 @@ export function isVoteEditableAction(a: EditableAction<ActionType>): a is Editab
     return a.type === "vote";
 }
 
-export type ActionType = 'audio' | 'video' | 'vote' | 'funMeter';
-export const ActionTypesMap: { [K in ActionType]: number } = { audio: 0, video: 1, vote: 2, funMeter: 3 };
-export const TypesActionMap: { [type: number]: ActionType } = { 0: 'audio', 1: 'video', 2: 'vote', 3: 'funMeter' };
+export type ActionType = 'audio' | 'video' | 'vote' | 'meter';
+export const ActionTypesMap: { [K in ActionType]: number } = { audio: 0, video: 1, vote: 2, meter: 3 };
+export const TypesActionMap: { [type: number]: ActionType } = { 0: 'audio', 1: 'video', 2: 'vote', 3: 'meter' };
 
 export type ActionRenderData<T extends ActionType> = {
     type: T,
@@ -84,7 +89,7 @@ export type ActionRenderData<T extends ActionType> = {
     name: string,
     zone: string,
     location: string,
-} & (T extends "vote" ? { voteOptions: VoteOption[] } : T extends 'funMeter' ? { funMeterValue: number } : { filePath: string });
+} & (T extends "vote" ? { voteOptions: VoteOption[] } : T extends 'meter' ? { meterType: "fun" | "budget", value: number } : { filePath: string });
 
 export type EventId = number;
 
@@ -115,6 +120,8 @@ export type VoteOption = {
     text: string;
     preventions: VoteOptionId[];
     dependencies: VoteOptionId[];
+    funRequirement: number | undefined;
+    budgetRequirement: number | undefined;
 }
 
 export type EditableVoteOption = Omit<VoteOption, "id" | "preventions" | "dependencies"> & {

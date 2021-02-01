@@ -27,6 +27,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             req.body.name,
             req.body.voteOptions,
             req.body.funMeterValue || 0,
+            req.body.budgetMeterValue || 0,
             req.body.text,
             req.body.filePath
         )
@@ -41,6 +42,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             req.body.name,
             req.body.voteOptions || [],
             req.body.funMeterValue || 0,
+            req.body.budgetMeterValue || 0,
             req.body.text,
             req.body.filePath
         )

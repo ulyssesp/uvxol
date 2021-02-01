@@ -15,11 +15,13 @@ export default class Socket {
   }
 
   connect() {
-    this.socket = new WebSocket(`ws://${this.SERVER_URL}:${this.SERVER_PORT}`);
-    this.socket.addEventListener('open', this.connectHandler.bind(this));
-    this.socket.addEventListener('close', this.closeHandler.bind(this));
-    this.socket.addEventListener('error', () => { });
-    this.socket.addEventListener('message', msg => this.callbacks.forEach(f => f(JSON.parse(msg.data))))
+    if (!(this.socket && (this.socket.CONNECTING || this.socket.OPEN))) {
+      this.socket = new WebSocket(`ws://${this.SERVER_URL}:${this.SERVER_PORT}`);
+      this.socket.addEventListener('open', this.connectHandler.bind(this));
+      this.socket.addEventListener('close', this.closeHandler.bind(this));
+      this.socket.addEventListener('error', () => { });
+      this.socket.addEventListener('message', msg => this.callbacks.forEach(f => f(JSON.parse(msg.data))))
+    }
   }
 
   connectHandler() {

@@ -18,12 +18,12 @@ import {
   PendingVoteOption,
   Active,
   Pending,
-  Finished, TallyVotes, VoteAction, DependenciesSatisfied, EventRendererSystem, ActionRendererSystem, FunMeter, RenderableFunMeterAction, ActionEventStore, VoteOptionStore, ActionStore
+  Finished, TallyVotes, VoteAction, DependenciesSatisfied, EventRendererSystem, ActionRendererSystem, Meter, RenderableMeterAction, ActionEventStore, VoteOptionStore, ActionStore
 } from './ecs';
 import { Action, ActionEvent, ActionRenderData, ActionType, EventRenderData, ServerAction, TypesActionMap, VoteOption, ServerEvent, Runner } from "./types";
 import * as signalR from "@microsoft/signalr";
 import WebSocket from "ws";
-import { getActions, getEvents, getVoteOptions, startVote } from "./api";
+import { getActions, getEvents, getVoteOptions, startVote, voteOptionsUri } from "./api";
 
 const process = require('process');
 
@@ -46,8 +46,8 @@ world
   .registerComponent(Active)
   .registerComponent(Pending)
   .registerComponent(Finished)
-  .registerComponent(FunMeter)
-  .registerComponent(RenderableFunMeterAction)
+  .registerComponent(Meter)
+  .registerComponent(RenderableMeterAction)
   .registerComponent(ActionEventStore)
   .registerComponent(VoteOptionStore)
   .registerComponent(ActionStore)
@@ -79,12 +79,17 @@ const runner: Runner = {
       data: event
     }))
   },
-  removeAction: (id: number, eventId: number) => {
+  removeAction: (action: ActionRenderData<ActionType>) => {
     broadcast(JSON.stringify({
       type: "removeAction",
-      id,
-      eventId
+      id: action.id,
+      eventId: action.eventId
     }))
+
+    if (action.type === "vote") {
+      data.activeVotes.set(action.zone, []);
+      startVote(action.zone, []);
+    }
   },
   removeEvent: (id: number) => {
     broadcast(JSON.stringify({
@@ -104,7 +109,10 @@ const runner: Runner = {
       time
     }))
   },
-  startVote: (zone: string, voteOptions: { name: string, voteOptionId: number, actionId: number }[]) => startVote(zone, voteOptions)
+  startVote: (zone: string, voteOptions: { name: string, voteOptionId: number, actionId: number }[]) => {
+    data.activeVotes.set('zone', voteOptions);
+    startVote(zone, voteOptions)
+  }
 }
 
 const data: {
@@ -113,12 +121,14 @@ const data: {
   lastTime: number,
   runner: Runner,
   runHandle: NodeJS.Timeout | undefined,
+  activeVotes: Map<string, { name: string, voteOptionId: number, actionId: number }[]>
 } = {
   events: [],
   actions: [],
   lastTime: 0,
   runHandle: undefined,
-  runner
+  runner,
+  activeVotes: new Map()
 }
 
 const votingSignalR = new signalR.HubConnectionBuilder()
@@ -126,11 +136,19 @@ const votingSignalR = new signalR.HubConnectionBuilder()
   .build();
 
 votingSignalR.on("NewVote", ({ voter, voteOptionId, actionId }: { voter: string, voteOptionId: number, actionId: number }) => {
+  console.log("new vote" + voter)
   if (voter !== "control") {
     world!.createEntity()
       .addComponent(PendingVoteOption, { voter, actionId, voteOptionId });
   }
 });
+
+votingSignalR.on("NewClient", () => {
+  for (const entry of data.activeVotes.entries()) {
+    startVote(entry[0], entry[1]);
+  }
+});
+
 
 votingSignalR.start().catch(err => console.error(err));
 
@@ -142,7 +160,7 @@ const broadcast = (msg: string) => {
 const renderer: Entity = world.createEntity()
   .addComponent(Run, { events: data.events, actions: data.actions, runner })
   .addComponent(Clock)
-  .addComponent(FunMeter);
+  .addComponent(Meter);
 
 wss.on('connection', ws => {
   const status = { connected: true };
@@ -182,7 +200,9 @@ wss.on('connection', ws => {
             events: data.events,
             actions: data.actions,
             time: renderer.getComponent<Clock>(Clock)!.time,
-            speed: renderer.getComponent<Clock>(Clock)!.timeScale
+            speed: renderer.getComponent<Clock>(Clock)!.timeScale,
+            funMeter: renderer.getComponent<Meter>(Meter)!.fun,
+            budgetMeter: renderer.getComponent<Meter>(Meter)!.budget
           }))
         }
         break;
@@ -192,7 +212,6 @@ wss.on('connection', ws => {
 
 
 const startWorld = (events: ActionEvent[], actions: Action<ActionType>[], voteOptions: VoteOption[], id?: number) => {
-  console.log("starting " + events.length)
   if (data.runHandle) {
     clearTimeout(data.runHandle);
   }

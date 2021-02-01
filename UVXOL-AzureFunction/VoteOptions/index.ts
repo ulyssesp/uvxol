@@ -25,8 +25,10 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             req.body.name,
             req.body.shortname,
             req.body.text,
+            req.body.funRequirement,
+            req.body.budgetRequirement,
             req.body.dependencies,
-            req.body.preventions
+            req.body.preventions,
         )
             .then(res => res.recordset[0][0])
             .catch(err => { context.log(err); return { err } });
@@ -36,6 +38,8 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             req.body.name,
             req.body.shortname,
             req.body.text,
+            req.body.funRequirement,
+            req.body.budgetRequirement,
             req.body.dependencies,
             req.body.preventions
         )

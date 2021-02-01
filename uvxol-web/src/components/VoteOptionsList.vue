@@ -105,6 +105,8 @@ const mapVoteOption = (val: VoteOption): EditableVoteOption => ({
   preventions: val.preventions,
   dependencies: val.dependencies,
   shortname: val.shortname,
+  funRequirement: val.funRequirement,
+  budgetRequirement: val.budgetRequirement,
 });
 
 const defaultVoteOption: EditableVoteOption = {
@@ -113,6 +115,8 @@ const defaultVoteOption: EditableVoteOption = {
   preventions: [] as number[],
   dependencies: [] as number[],
   shortname: "",
+  funRequirement: undefined,
+  budgetRequirement: undefined,
 };
 
 @Component({

@@ -132,7 +132,7 @@ export class RenderableFileAction extends Component<ActionRenderData<"video">> {
   }
 }
 
-export class RenderableFunMeterAction extends Component<ActionRenderData<"funMeter">> {
+export class RenderableMeterAction extends Component<ActionRenderData<"funMeter">> {
   id: number = -1;
   eventId: number = -1;
   name: string = "";
@@ -140,6 +140,7 @@ export class RenderableFunMeterAction extends Component<ActionRenderData<"funMet
   location: string = "";
   type: "funMeter" = "funMeter";
   funMeterValue: number = 0;
+  budgetMeterValue: number = 0;
 
   static schema = {
     id: { type: Types.Number },
@@ -149,6 +150,7 @@ export class RenderableFunMeterAction extends Component<ActionRenderData<"funMet
     type: { type: Types.String },
     eventId: { type: Types.Number },
     funMeterValue: { type: Types.Number },
+    budgetMeterValue: { type: Types.Number },
   }
 }
 
@@ -171,12 +173,13 @@ export class Run extends Component<{ events: EventRenderData[], actions: ActionR
   }
 }
 
-export class FunMeter extends Component<{ value: number }> {
-  value: number = 0;
+export class Meter extends Component<{ fun: number, budget: number }> {
+  fun: number = 0;
+  budget: number = 0;
   static schema = {
-    value: { type: Types.Number }
+    fun: { type: Types.Number },
+    budget: { type: Types.Number }
   }
-
 }
 
 export class ResetComponent extends Component<{ events: number[] }> {
@@ -390,6 +393,9 @@ export class EventTriggerSystem extends System {
     voteOptionStore: {
       components: [VoteOptionStore]
     },
+    meter: {
+      components: [Meter]
+    }
   }
 
   execute(delta: number, time: number): void {
@@ -427,11 +433,15 @@ export class EventTriggerSystem extends System {
         }
 
         if (actionData.type === "vote") {
+          const meter = this.queries.meter.results[0].getComponent<Meter>(Meter)!;
           const voteOptions = (actionData as Action<"vote">).voteOptions!
             .map(vo => voteOptionStore.get(vo.id)!)
             .filter(vo =>
+              (vo.funRequirement === undefined || vo.funRequirement < meter.fun) &&
+              (vo.budgetRequirement === undefined || vo.budgetRequirement < meter.budget) &&
               vo.dependencies.every(dep => chosenVoteOptions.has(dep)) &&
-              vo.preventions.every(prev => !chosenVoteOptions.has(prev))
+              vo.preventions.every(prev => !chosenVoteOptions.has(prev)
+              )
             );
           entity
             .addComponent(RenderableVoteAction, Object.assign(baseRenderableAction, {
@@ -469,12 +479,13 @@ export class EventTriggerSystem extends System {
         } else if (actionData.type === "funMeter") {
           entity
             .addComponent(
-              RenderableFunMeterAction,
+              RenderableMeterAction,
               Object.assign(baseRenderableAction,
                 {
                   eventId: eventData.id,
                   type: "funMeter" as "funMeter",
-                  funMeterValue: (actionData as Action<"funMeter">).funMeterValue
+                  funMeterValue: (actionData as Action<"funMeter">).funMeterValue,
+                  budgetMeterValue: (actionData as Action<"funMeter">)
                 },
               ))
             .addComponent(TimeToggle, { on: on, off: Number.MAX_VALUE })
@@ -566,8 +577,8 @@ export class ActionRendererSystem extends System {
         removed: true
       }
     },
-    funMeterActions: {
-      components: [RenderableFunMeterAction, Active],
+    meterActions: {
+      components: [RenderableMeterAction, Active],
       listen: {
         added: true,
         removed: true
@@ -576,15 +587,15 @@ export class ActionRendererSystem extends System {
     renderer: {
       components: [Run]
     },
-    funMeter: {
-      components: [FunMeter]
+    meter: {
+      components: [Meter]
     }
 
   }
 
   execute(delta: number, time: number): void {
     const renderer = this.queries.renderer.results[0].getComponent<Run>(Run)!;
-    const funMeter = this.queries.funMeter.results[0].getMutableComponent<FunMeter>(FunMeter)!;
+    const meter = this.queries.meter.results[0].getMutableComponent<Meter>(Meter)!;
 
     this.queries.voteActions.added!.forEach(entity => {
       const renderableAction: RenderableVoteAction = entity.getComponent<RenderableVoteAction>(RenderableVoteAction)!;
@@ -625,9 +636,24 @@ export class ActionRendererSystem extends System {
       }
     });
 
-    this.queries.funMeterActions.added!.forEach(entity => {
-      const renderableAction: RenderableFunMeterAction = entity.getComponent<RenderableFunMeterAction>(RenderableFunMeterAction)!;
-      funMeter.value += renderableAction.funMeterValue;
+    this.queries.meterActions.added!.forEach(entity => {
+      console.log("Adding meter")
+      const renderableAction: RenderableMeterAction = entity.getComponent<RenderableMeterAction>(RenderableMeterAction)!;
+      meter.fun += renderableAction.funMeterValue;
+      meter.budget += renderableAction.budgetMeterValue;
+      const actionData = {
+        id: renderableAction.id,
+        eventId: renderableAction.eventId,
+        name: renderableAction.name,
+        zone: renderableAction.zone,
+        location: renderableAction.location,
+        type: renderableAction.type,
+        funMeterValue: meter.fun,
+        budgetMeterValue: meter.budget
+      };
+      if (renderer.runner) {
+        renderer.runner.addAction(actionData);
+      }
     });
 
     this.queries.voteActions.removed!.forEach(entity => {
@@ -637,7 +663,7 @@ export class ActionRendererSystem extends System {
           : entity.getComponent<RenderableVoteAction>(RenderableVoteAction)!;
       renderer.actions.splice(renderer.actions.findIndex(a => a.id === renderableAction.id), 1);
       if (renderer.runner) {
-        renderer.runner.removeAction(renderableAction.id, renderableAction.eventId);
+        renderer.runner.removeAction(renderableAction);
       }
     });
 
@@ -648,16 +674,17 @@ export class ActionRendererSystem extends System {
           : entity.getComponent<RenderableFileAction>(RenderableFileAction)!;
       renderer.actions.splice(renderer.actions.findIndex(a => a.id === renderableAction.id), 1);
       if (renderer.runner) {
-        renderer.runner.removeAction(renderableAction.id, renderableAction.eventId)
+        renderer.runner.removeAction(renderableAction)
       }
     });
 
-    this.queries.funMeterActions.removed!.forEach(entity => {
-      const renderableAction: RenderableFunMeterAction =
-        entity.hasRemovedComponent(RenderableFunMeterAction)
-          ? entity.getRemovedComponent<RenderableFunMeterAction>(RenderableFunMeterAction)!
-          : entity.getComponent<RenderableFunMeterAction>(RenderableFunMeterAction)!;
-      funMeter.value -= renderableAction.funMeterValue;
+    this.queries.meterActions.removed!.forEach(entity => {
+      const renderableAction: RenderableMeterAction =
+        entity.hasRemovedComponent(RenderableMeterAction)
+          ? entity.getRemovedComponent<RenderableMeterAction>(RenderableMeterAction)!
+          : entity.getComponent<RenderableMeterAction>(RenderableMeterAction)!;
+      meter.fun -= renderableAction.funMeterValue;
+      meter.budget -= renderableAction.budgetMeterValue;
     });
   }
 }

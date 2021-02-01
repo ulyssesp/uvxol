@@ -100,7 +100,7 @@ import {
   ActionType,
   isVoteAction,
   EditableAction,
-  isFunMeterAction,
+  isMeterAction,
   isFileAction,
   actionVoteOptions,
 } from "../types";

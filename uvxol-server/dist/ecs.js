@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ActionRendererSystem = exports.EventRendererSystem = exports.EventTriggerSystem = exports.DependenciesTriggerSystem = exports.TallyVotes = exports.TimeToggleSystem = exports.TickClock = exports.Reset = exports.Finished = exports.Pending = exports.Active = exports.ResetComponent = exports.FunMeter = exports.Run = exports.RenderableFunMeterAction = exports.RenderableFileAction = exports.RenderableVoteAction = exports.RenderableEvent = exports.EventTrigger = exports.DependenciesSatisfied = exports.DependenciesTrigger = exports.VoteAction = exports.PendingVoteOption = exports.ChosenVoteOption = exports.TimeToggle = exports.Clock = exports.VoteOptionStore = exports.ActionStore = exports.ActionEventStore = exports.Store = void 0;
+exports.ActionRendererSystem = exports.EventRendererSystem = exports.EventTriggerSystem = exports.DependenciesTriggerSystem = exports.TallyVotes = exports.TimeToggleSystem = exports.TickClock = exports.Reset = exports.Finished = exports.Pending = exports.Active = exports.ResetComponent = exports.Meter = exports.Run = exports.RenderableMeterAction = exports.RenderableFileAction = exports.RenderableVoteAction = exports.RenderableEvent = exports.EventTrigger = exports.DependenciesSatisfied = exports.DependenciesTrigger = exports.VoteAction = exports.PendingVoteOption = exports.ChosenVoteOption = exports.TimeToggle = exports.Clock = exports.VoteOptionStore = exports.ActionStore = exports.ActionEventStore = exports.Store = void 0;
 const ecsy_1 = require("ecsy");
 const types_1 = require("./types");
 class Store extends ecsy_1.Component {
@@ -170,7 +170,7 @@ RenderableFileAction.schema = {
     type: { type: ecsy_1.Types.String },
     eventId: { type: ecsy_1.Types.Number }
 };
-class RenderableFunMeterAction extends ecsy_1.Component {
+class RenderableMeterAction extends ecsy_1.Component {
     constructor() {
         super(...arguments);
         this.id = -1;
@@ -180,10 +180,11 @@ class RenderableFunMeterAction extends ecsy_1.Component {
         this.location = "";
         this.type = "funMeter";
         this.funMeterValue = 0;
+        this.budgetMeterValue = 0;
     }
 }
-exports.RenderableFunMeterAction = RenderableFunMeterAction;
-RenderableFunMeterAction.schema = {
+exports.RenderableMeterAction = RenderableMeterAction;
+RenderableMeterAction.schema = {
     id: { type: ecsy_1.Types.Number },
     name: { type: ecsy_1.Types.String },
     zone: { type: ecsy_1.Types.String },
@@ -191,6 +192,7 @@ RenderableFunMeterAction.schema = {
     type: { type: ecsy_1.Types.String },
     eventId: { type: ecsy_1.Types.Number },
     funMeterValue: { type: ecsy_1.Types.Number },
+    budgetMeterValue: { type: ecsy_1.Types.Number },
 };
 function isRenderableVoteAction(a) {
     return a.type === "vote";
@@ -211,15 +213,17 @@ Run.schema = {
     actions: { type: ecsy_1.Types.Ref },
     runner: { type: ecsy_1.Types.Ref }
 };
-class FunMeter extends ecsy_1.Component {
+class Meter extends ecsy_1.Component {
     constructor() {
         super(...arguments);
-        this.value = 0;
+        this.fun = 0;
+        this.budget = 0;
     }
 }
-exports.FunMeter = FunMeter;
-FunMeter.schema = {
-    value: { type: ecsy_1.Types.Number }
+exports.Meter = Meter;
+Meter.schema = {
+    fun: { type: ecsy_1.Types.Number },
+    budget: { type: ecsy_1.Types.Number }
 };
 class ResetComponent extends ecsy_1.Component {
     constructor() {
@@ -442,9 +446,12 @@ class EventTriggerSystem extends ecsy_1.System {
                     location: actionData.location,
                 };
                 if (actionData.type === "vote") {
+                    const meter = this.queries.meter.results[0].getComponent(Meter);
                     const voteOptions = actionData.voteOptions
                         .map(vo => voteOptionStore.get(vo.id))
-                        .filter(vo => vo.dependencies.every(dep => chosenVoteOptions.has(dep)) &&
+                        .filter(vo => (vo.funRequirement === undefined || vo.funRequirement < meter.fun) &&
+                        (vo.budgetRequirement === undefined || vo.budgetRequirement < meter.budget) &&
+                        vo.dependencies.every(dep => chosenVoteOptions.has(dep)) &&
                         vo.preventions.every(prev => !chosenVoteOptions.has(prev)));
                     entity
                         .addComponent(RenderableVoteAction, Object.assign(baseRenderableAction, {
@@ -477,10 +484,11 @@ class EventTriggerSystem extends ecsy_1.System {
                 }
                 else if (actionData.type === "funMeter") {
                     entity
-                        .addComponent(RenderableFunMeterAction, Object.assign(baseRenderableAction, {
+                        .addComponent(RenderableMeterAction, Object.assign(baseRenderableAction, {
                         eventId: eventData.id,
                         type: "funMeter",
-                        funMeterValue: actionData.funMeterValue
+                        funMeterValue: actionData.funMeterValue,
+                        budgetMeterValue: actionData
                     }))
                         .addComponent(TimeToggle, { on: on, off: Number.MAX_VALUE });
                 }
@@ -514,6 +522,9 @@ EventTriggerSystem.queries = {
     voteOptionStore: {
         components: [VoteOptionStore]
     },
+    meter: {
+        components: [Meter]
+    }
 };
 class EventRendererSystem extends ecsy_1.System {
     execute(delta, time) {
@@ -568,7 +579,7 @@ EventRendererSystem.queries = {
 class ActionRendererSystem extends ecsy_1.System {
     execute(delta, time) {
         const renderer = this.queries.renderer.results[0].getComponent(Run);
-        const funMeter = this.queries.funMeter.results[0].getMutableComponent(FunMeter);
+        const meter = this.queries.meter.results[0].getMutableComponent(Meter);
         this.queries.voteActions.added.forEach(entity => {
             const renderableAction = entity.getComponent(RenderableVoteAction);
             const actionData = {
@@ -606,9 +617,24 @@ class ActionRendererSystem extends ecsy_1.System {
                 renderer.runner.addAction(actionData);
             }
         });
-        this.queries.funMeterActions.added.forEach(entity => {
-            const renderableAction = entity.getComponent(RenderableFunMeterAction);
-            funMeter.value += renderableAction.funMeterValue;
+        this.queries.meterActions.added.forEach(entity => {
+            console.log("Adding meter");
+            const renderableAction = entity.getComponent(RenderableMeterAction);
+            meter.fun += renderableAction.funMeterValue;
+            meter.budget += renderableAction.budgetMeterValue;
+            const actionData = {
+                id: renderableAction.id,
+                eventId: renderableAction.eventId,
+                name: renderableAction.name,
+                zone: renderableAction.zone,
+                location: renderableAction.location,
+                type: renderableAction.type,
+                funMeterValue: meter.fun,
+                budgetMeterValue: meter.budget
+            };
+            if (renderer.runner) {
+                renderer.runner.addAction(actionData);
+            }
         });
         this.queries.voteActions.removed.forEach(entity => {
             const renderableAction = entity.hasRemovedComponent(RenderableVoteAction)
@@ -616,7 +642,7 @@ class ActionRendererSystem extends ecsy_1.System {
                 : entity.getComponent(RenderableVoteAction);
             renderer.actions.splice(renderer.actions.findIndex(a => a.id === renderableAction.id), 1);
             if (renderer.runner) {
-                renderer.runner.removeAction(renderableAction.id, renderableAction.eventId);
+                renderer.runner.removeAction(renderableAction);
             }
         });
         this.queries.fileActions.removed.forEach(entity => {
@@ -625,14 +651,15 @@ class ActionRendererSystem extends ecsy_1.System {
                 : entity.getComponent(RenderableFileAction);
             renderer.actions.splice(renderer.actions.findIndex(a => a.id === renderableAction.id), 1);
             if (renderer.runner) {
-                renderer.runner.removeAction(renderableAction.id, renderableAction.eventId);
+                renderer.runner.removeAction(renderableAction);
             }
         });
-        this.queries.funMeterActions.removed.forEach(entity => {
-            const renderableAction = entity.hasRemovedComponent(RenderableFunMeterAction)
-                ? entity.getRemovedComponent(RenderableFunMeterAction)
-                : entity.getComponent(RenderableFunMeterAction);
-            funMeter.value -= renderableAction.funMeterValue;
+        this.queries.meterActions.removed.forEach(entity => {
+            const renderableAction = entity.hasRemovedComponent(RenderableMeterAction)
+                ? entity.getRemovedComponent(RenderableMeterAction)
+                : entity.getComponent(RenderableMeterAction);
+            meter.fun -= renderableAction.funMeterValue;
+            meter.budget -= renderableAction.budgetMeterValue;
         });
     }
 }
@@ -652,8 +679,8 @@ ActionRendererSystem.queries = {
             removed: true
         }
     },
-    funMeterActions: {
-        components: [RenderableFunMeterAction, Active],
+    meterActions: {
+        components: [RenderableMeterAction, Active],
         listen: {
             added: true,
             removed: true
@@ -662,8 +689,8 @@ ActionRendererSystem.queries = {
     renderer: {
         components: [Run]
     },
-    funMeter: {
-        components: [FunMeter]
+    meter: {
+        components: [Meter]
     }
 };
 const createOrUpdateEventState = (events, state, renderableEvent) => {

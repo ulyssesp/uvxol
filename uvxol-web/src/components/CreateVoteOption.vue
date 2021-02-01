@@ -22,6 +22,10 @@
             v-model="editedVoteOption.text"
             label="Text"
           ></v-text-field>
+          <v-text-field
+            v-model="editedVoteOption.funRequirement"
+            label="Fun Requirement"
+          ></v-text-field>
           <v-col>
             <v-autocomplete
               :items="voteOptions"
@@ -121,6 +125,8 @@ export default class CreateVoteOption extends Vue {
         text: this.editedVoteOption.text,
         dependencies: this.editedVoteOption.dependencies,
         preventions: this.editedVoteOption.preventions,
+        funRequirement: this.editedVoteOption.funRequirement,
+        budgetRequirement: this.editedVoteOption.budgetRequirement,
       })
       .then(() => (this.err = "loaded"))
       .then(() => (this.loading = false))

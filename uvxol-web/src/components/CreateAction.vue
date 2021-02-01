@@ -112,12 +112,23 @@
             </v-autocomplete>
           </v-col>
         </v-row>
-        <v-row v-if="editedAction.type === 'funMeter'">
+        <v-row v-if="editedAction.type === 'meter'">
+          <v-col cols="6">
+            <v-select
+              :items="meterTypes"
+              v-model="editedAction.meterType"
+              label="meter type"
+              segmented
+              overflow
+              editable
+              target="#target"
+            ></v-select>
+          </v-col>
           <v-col cols="6">
             <v-text-field
-              v-model="editedAction.funMeterValue"
-              label="Fun Meter Value"
-              placeholder="The fun meter value of this event"
+              v-model="editedAction.value"
+              label="Meter Value"
+              placeholder="The meter value of this event"
             ></v-text-field>
           </v-col>
         </v-row>
@@ -149,7 +160,8 @@ export default class CreateAction extends Vue {
   @Prop({ required: true }) voteOptions!: VoteOption[];
   @Prop() readonly updateId!: any;
   @Prop() readonly updateAction!: any;
-  actionTypes = ["audio", "video", "vote", "funMeter"];
+  actionTypes = ["audio", "video", "vote", "meter"];
+  meterTypes = ["fun", "budget"];
   err = "";
   type = "video";
   loading = false;

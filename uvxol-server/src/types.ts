@@ -113,6 +113,8 @@ export type VoteOption = {
   name: string;
   shortname: string;
   text: string;
+  funRequirement: number | undefined;
+  budgetRequirement: number | undefined;
   preventions: VoteOptionId[];
   dependencies: VoteOptionId[];
 }
@@ -147,7 +149,7 @@ export type ServerEvent =
 export type Runner = {
   addAction: (action: ActionRenderData<ActionType>) => void,
   addEvent: (event: EventRenderData) => void,
-  removeAction: (id: number, eventId: number) => void,
+  removeAction: (action: ActionRenderData<ActionType>) => void,
   removeEvent: (id: number) => void,
   restart: () => void,
   setPlaySpeed: (speed: number, time: number) => void

@@ -21,20 +21,20 @@ export const getEvent: (id: EventId) => Promise<any> = async function (id) {
             EventId as id, Name as name, Delay as delay, Duration as duration, 
             (select ET.TriggerId as id from EventTriggers as ET
                 where (ET.EventId = E.EventId) for json auto) as triggers,
-            (select Actions.ActionId as id, Zone as zone, Location as location, FilePath as filePath, Type as type, Name as name, FunMeterValue as funMeterValue,
-                    (select VO.VoteOptionId as id, VO.Text as text, VO.Name as name, VO.ShortName as shortname from VoteOptions as VO 
+            (select Actions.ActionId as id, Zone as zone, Location as location, FilePath as filePath, Type as type, Name as name, FunMeterValue as funMeterValue, BudgetMeterValue as budgetMeterValue,
+                    (select VO.VoteOptionId as id, VO.Text as text, VO.Name as name, VO.ShortName as shortname, VO.FunRequirement as funRequirement, VO.BudgetRequirement as budgetRequirement from VoteOptions as VO 
                         join ActionVoteOptions as AVO on (AVO.ActionId = Actions.ActionId and VO.VoteOptionId = AVO.VoteOptionId) 
                         for json auto) as voteOptions
                 from Actions join EventActions 
                 on (EventActions.EventId = E.EventId and Actions.ActionId = EventActions.ActionId) 
                 for json auto
             ) as actions,
-            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname, VO.funRequirement as funRequirement, VO.BudgetRequirement as budgetRequirement
                 from VoteOptions as VO join EventVoteOptions as EVO
                 on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 0)
                 for json auto
             ) as dependencies,
-            (select VO.VoteOptionId as id, VO.Name as name, VO.Text  as text, VO.ShortName as shortname
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text  as text, VO.ShortName as shortname, VO.funRequirement as funRequirement, VO.BudgetRequirement as budgetRequirement
                 from VoteOptions as VO join EventVoteOptions as EVO
                 on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 1)
                 for json auto
@@ -51,17 +51,17 @@ export const getEvents: () => Promise<any> = async function () {
             EventId as id, Name as name, Delay as delay, Duration as duration, 
             (select ET.TriggerId as id from EventTriggers as ET
                 where (ET.EventId = E.EventId) for json auto) as triggers,
-            (select Actions.ActionId as id, Zone as zone, Location as location, FilePath as filePath, Type as type, Name as name, FunMeterValue as funMeterValue
+            (select Actions.ActionId as id, Zone as zone, Location as location, FilePath as filePath, Type as type, Name as name, FunMeterValue as funMeterValue, BudgetMeterValue as budgetMeterValue
                 from Actions join EventActions 
                 on (EventActions.EventId = E.EventId and Actions.ActionId = EventActions.ActionId) 
                 for json auto
             ) as actions,
-            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname, VO.funRequirement as funRequirement, VO.BudgetRequirement as budgetRequirement
                 from VoteOptions as VO join EventVoteOptions as EVO
                 on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 0)
                 for json auto
             ) as dependencies,
-            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname, VO.funRequirement as funRequirement, VO.BudgetRequirement as budgetRequirement
                 from VoteOptions as VO join EventVoteOptions as EVO
                 on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 1)
                 for json auto
@@ -79,20 +79,20 @@ export const getEventsForTrigger: (triggerId: number) => Promise<any> = async fu
             E.EventId as id, Name as name, Delay as delay, Duration as duration, 
             (select ET.TriggerId as id from EventTriggers as ET
                 where (ET.EventId = E.EventId) for json auto) as triggers,
-            (select Actions.ActionId as id, Zone as zone, Location as location, FilePath as filePath, Type as type, Name as name, FunMeterValue as funMeterValue,
-                    (select VO.VoteOptionId as id, VO.Text as text, VO.Name as name, VO.ShortName as shortname from VoteOptions as VO 
+            (select Actions.ActionId as id, Zone as zone, Location as location, FilePath as filePath, Type as type, Name as name, FunMeterValue as funMeterValue, BudgetMeterValue as budgetMeterValue,
+                    (select VO.VoteOptionId as id, VO.Text as text, VO.Name as name, VO.ShortName as shortname, VO.funRequirement as funRequirement, VO.BudgetRequirement as budgetRequirement from VoteOptions as VO 
                         join ActionVoteOptions as AVO on (AVO.ActionId = Actions.ActionId and VO.VoteOptionId = AVO.VoteOptionId) 
                         for json auto) as voteOptions
                 from Actions join EventActions 
                 on (EventActions.EventId = E.EventId and Actions.ActionId = EventActions.ActionId) 
                 for json auto
             ) as actions,
-            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname, VO.funRequirement as funRequirement, VO.BudgetRequirement as budgetRequirement
                 from VoteOptions as VO join EventVoteOptions as EVO
                 on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 0)
                 for json auto
             ) as dependencies,
-            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname, VO.funRequirement as funRequirement, VO.BudgetRequirement as budgetRequirement
                 from VoteOptions as VO join EventVoteOptions as EVO
                 on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 1)
                 for json auto
@@ -110,20 +110,20 @@ export const getStartEvents: () => Promise<any> = async function () {
             EventId as id, Name as name, Delay as delay, Duration as duration, 
             (select ET.TriggerId as id from EventTriggers as ET
                 where (ET.EventId = E.EventId) for json auto) as triggers,
-            (select Actions.ActionId as id, Zone as zone, Location as location, FilePath as filePath, Type as type, Name as name, FunMeterValue as funMeterValue,
-                    (select VO.VoteOptionId as id, VO.Text as text, VO.Name as name, VO.ShortName as shortname from VoteOptions as VO 
+            (select Actions.ActionId as id, Zone as zone, Location as location, FilePath as filePath, Type as type, Name as name, FunMeterValue as funMeterValue, BudgetMeterValue as budgetMeterValue,
+                    (select VO.VoteOptionId as id, VO.Text as text, VO.Name as name, VO.ShortName as shortname, VO.funRequirement as funRequirement, VO.BudgetRequirement as budgetRequirement from VoteOptions as VO 
                         join ActionVoteOptions as AVO on (AVO.ActionId = Actions.ActionId and VO.VoteOptionId = AVO.VoteOptionId) 
                         for json auto) as voteOptions
                 from Actions join EventActions 
                 on (EventActions.EventId = E.EventId and Actions.ActionId = EventActions.ActionId) 
                 for json auto
             ) as actions,
-            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname, VO.funRequirement as funRequirement, VO.BudgetRequirement as budgetRequirement
                 from VoteOptions as VO join EventVoteOptions as EVO
                 on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 0)
                 for json auto
             ) as dependencies,
-            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname
+            (select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname, VO.funRequirement as funRequirement, VO.BudgetRequirement as budgetRequirement
                 from VoteOptions as VO join EventVoteOptions as EVO
                 on (EVO.EventId = E.EventId and VO.VoteOptionId = EVO.VoteOptionId and EVO.Relationship = 1)
                 for json auto
@@ -137,8 +137,8 @@ export const getStartEvents: () => Promise<any> = async function () {
 
 export const getAction: (id: number) => Promise<any> = async function (id) {
     return connect.then(() => pool.request().input('id', sql.Int, id)
-        .query`select A.ActionId as id, A.Name as name, A.Zone as zone, A.Location as location, A.FilePath as filePath, A.Type as type, A.FunMeterValue as funMeterValue,
-            (select VO.VoteOptionId as id, VO.Name as name, VO.ShortName as shortname from VoteOptions as VO 
+        .query`select A.ActionId as id, A.Name as name, A.Zone as zone, A.Location as location, A.FilePath as filePath, A.Type as type, A.FunMeterValue as funMeterValue, A.BudgetMeterValue as budgetMeterValue,
+            (select VO.VoteOptionId as id, VO.Name as name, VO.ShortName as shortname, VO.funRequirement as funRequirement, VO.BudgetRequirement as budgetRequirement from VoteOptions as VO 
                 join ActionVoteOptions as AVO
                 on (VO.VoteOptionId = AVO.VoteOptionId and AVO.ActionId = A.ActionId)
             for json auto) as voteOptions 
@@ -149,8 +149,8 @@ export const getAction: (id: number) => Promise<any> = async function (id) {
 
 export const getActions: () => Promise<any> = async function () {
     return connect.then(() =>
-        pool.query`select A.ActionId as id, A.Name as name, A.Zone as zone, A.Location as location, A.FilePath as filePath, A.Type as type, A.FunMeterValue as funMeterValue,
-            (select VO.VoteOptionId as id, VO.Name as name, VO.ShortName as shortname from VoteOptions as VO 
+        pool.query`select A.ActionId as id, A.Name as name, A.Zone as zone, A.Location as location, A.FilePath as filePath, A.Type as type, A.FunMeterValue as funMeterValue, A.BudgetMeterValue as budgetMeterValue,
+            (select VO.VoteOptionId as id, VO.Name as name, VO.ShortName as shortname, VO.funRequirement as funRequirement, VO.BudgetRequirement as budgetRequirement from VoteOptions as VO 
                 join ActionVoteOptions as AVO
                 on (VO.VoteOptionId = AVO.VoteOptionId and AVO.ActionId = A.ActionId)
             for json auto) as voteOptions 
@@ -160,7 +160,7 @@ export const getActions: () => Promise<any> = async function () {
 
 export const getVoteOption = (id: number) =>
     connect.then(() => pool.request().input('id', sql.Int, id).query`
-        select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname,
+        select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname, VO.funRequirement as funRequirement, VO.BudgetRequirement as budgetRequirement,
             (select VOD.DependencyId as id
                 from VoteOptionDependencies as VOD 
                 where (VOD.VoteOptionId = VO.VoteOptionId and VOD.Relationship = 0)
@@ -175,7 +175,7 @@ export const getVoteOption = (id: number) =>
 
 export const getVoteOptions = () =>
     connect.then(() => pool.query`
-        select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname,
+        select VO.VoteOptionId as id, VO.Name as name, VO.Text as text, VO.ShortName as shortname, VO.funRequirement as funRequirement, VO.BudgetRequirement as budgetRequirement,
             (select VOD.DependencyId as id
                 from VoteOptionDependencies as VOD 
                 where (VOD.VoteOptionId = VO.VoteOptionId and VOD.Relationship = 0)
@@ -272,6 +272,7 @@ export const insertAction = async function (
     name: string,
     voteOptions: number[],
     funMeterValue: number,
+    budgetMeterValue: number,
     text?: string,
     filePath?: string) {
     return connect
@@ -283,9 +284,10 @@ export const insertAction = async function (
             .input('text', sql.Text, text)
             .input('filePath', sql.Text, filePath)
             .input('funMeterValue', sql.Int, funMeterValue)
-            .query`insert into Actions (Zone, Location, Type, Name, FilePath, Text, FunMeterValue) 
+            .input('budgetMeterValue', sql.Int, budgetMeterValue)
+            .query`insert into Actions (Zone, Location, Type, Name, FilePath, Text, FunMeterValue, BudgetMeterValue) 
                 output Inserted.ActionId 
-                values (@zone, @location, @type, @name, @filePath, @text, @funMetervalue)`)
+                values (@zone, @location, @type, @name, @filePath, @text, @funMetervalue, @budgetMeterValue)`)
         .then(actionResult => {
             const actionId = actionResult.recordset[0].ActionId
 
@@ -314,13 +316,15 @@ export const insertAction = async function (
         })
 }
 
-export const insertVoteOption = (name: string, shortname: string, text: string, dependencies: number[], preventions: number[]) =>
+export const insertVoteOption = (name: string, shortname: string, text: string, funRequirement: number | undefined, budgetRequirement: number | undefined, dependencies: number[], preventions: number[]) =>
     connect.then(() =>
         pool.request()
             .input('text', sql.Text, text)
             .input('name', sql.Text, name)
             .input('shortname', sql.Text, shortname)
-            .query`insert into VoteOptions (Text, Name, ShortName) output Inserted.VoteOptionId values (@text, @name, @shortname)`)
+            .input('funRequirement', sql.Int, funRequirement)
+            .input('budgetRequirement', sql.Int, budgetRequirement)
+            .query`insert into VoteOptions (Text, Name, ShortName, FunRequirement, BudgetRequirement) output Inserted.VoteOptionId values (@text, @name, @shortname, @funRequirement, @budgetRequirement)`)
         .then(voteOptionResult => {
             const voteOptionId = voteOptionResult.recordset[0].VoteOptionId
 
@@ -490,6 +494,7 @@ export const updateAction = async function (
     name: string,
     voteOptions: VoteOptionId[],
     funMeterValue: number,
+    budgetMeterValue: number,
     text: string,
     filePath: string) {
     return connect
@@ -502,12 +507,14 @@ export const updateAction = async function (
             .input('text', sql.Text, text)
             .input('filePath', sql.Text, filePath)
             .input('funMeterValue', sql.Int, funMeterValue)
+            .input('budgetMeterValue', sql.Int, budgetMeterValue)
             .query`update Actions set 
                 Zone=@zone,
                 Location=@location,
                 Type=@type,
                 Name=@name,
                 FunMeterValue=@funMeterValue,
+                BudgetMeterValue=@budgetMeterValue,
                 Text=@text,
                 FilePath=@filePath 
                 where ActionId = @id`)
@@ -545,6 +552,8 @@ export const updateVoteOption = async function (
     name: string,
     shortname: string,
     text: string,
+    funRequirement: number | undefined,
+    budgetRequirement: number | undefined,
     dependencies: number[],
     preventions: number[]
 ) {
@@ -555,7 +564,9 @@ export const updateVoteOption = async function (
                 .input('text', sql.Text, text)
                 .input('name', sql.Text, name)
                 .input('shortname', sql.Text, shortname)
-                .query`update VoteOptions set Text=@text, Name=@name, ShortName=@shortname where VoteOptionId=@id`)
+                .input('funRequirement', sql.Int, funRequirement)
+                .input('budgetRequirement', sql.Int, budgetRequirement)
+                .query`update VoteOptions set Text=@text, Name=@name, ShortName=@shortname, FunRequirement=@funRequirement, BudgetRequirement=@budgetRequirement where VoteOptionId=@id`)
         .then(() => deleteVoteOptionDependenciesByVoteOptionId(id))
         .then(voteOptionsResult => {
             const voteOptionId = id;

@@ -22,14 +22,14 @@ export const mapVoteOption: (a: any) => VoteOption =
         preventions: array.map((d: any) => d.id)(a.preventions || []),
     });
 
-export const postVoteOption: (name: string, shortname: string, text: string, dependencies: number[], preventions: number[])
-    => Promise<any> = (name, shortname, text, dependencies, preventions) =>
-        fetch(voteOptionsUri, { method: 'POST', body: JSON.stringify({ name, shortname, text, dependencies, preventions }) })
+export const postVoteOption: (name: string, shortname: string, text: string, budgetRequirement: number | undefined, funRequirement: number | undefined, dependencies: number[], preventions: number[])
+    => Promise<any> = (name, shortname, text, budgetRequirement, funRequirement, dependencies, preventions) =>
+        fetch(voteOptionsUri, { method: 'POST', body: JSON.stringify({ name, shortname, text, budgetRequirement, funRequirement, dependencies, preventions }) })
             .then(res => res.json());
 
-export const putVoteOption: (id: number, name: string, shortname: string, text: string, dependencies: number[], preventions: number[])
-    => Promise<any> = (id, name, shortname, text, dependencies, preventions) =>
-        fetch(voteOptionsUri, { method: 'PUT', body: JSON.stringify({ id, name, shortname, text, dependencies, preventions }) })
+export const putVoteOption: (id: number, name: string, shortname: string, text: string, budgetRequirement: number | undefined, funRequirement: number | undefined, dependencies: number[], preventions: number[])
+    => Promise<any> = (id, name, shortname, text, budgetRequirement, funRequirement, dependencies, preventions) =>
+        fetch(voteOptionsUri, { method: 'PUT', body: JSON.stringify({ id, name, shortname, text, budgetRequirement, funRequirement, dependencies, preventions }) })
             .then(res => res.json());
 
 export const deleteVoteOption: (id: number) => Promise<any> =

@@ -46,8 +46,8 @@ world
     .registerComponent(ecs_1.Active)
     .registerComponent(ecs_1.Pending)
     .registerComponent(ecs_1.Finished)
-    .registerComponent(ecs_1.FunMeter)
-    .registerComponent(ecs_1.RenderableFunMeterAction)
+    .registerComponent(ecs_1.Meter)
+    .registerComponent(ecs_1.RenderableMeterAction)
     .registerComponent(ecs_1.ActionEventStore)
     .registerComponent(ecs_1.VoteOptionStore)
     .registerComponent(ecs_1.ActionStore)
@@ -76,12 +76,16 @@ const runner = {
             data: event
         }));
     },
-    removeAction: (id, eventId) => {
+    removeAction: (action) => {
         broadcast(JSON.stringify({
             type: "removeAction",
-            id,
-            eventId
+            id: action.id,
+            eventId: action.eventId
         }));
+        if (action.type === "vote") {
+            data.activeVotes.set(action.zone, []);
+            api_1.startVote(action.zone, []);
+        }
     },
     removeEvent: (id) => {
         broadcast(JSON.stringify({
@@ -101,22 +105,32 @@ const runner = {
             time
         }));
     },
-    startVote: (zone, voteOptions) => api_1.startVote(zone, voteOptions)
+    startVote: (zone, voteOptions) => {
+        data.activeVotes.set('zone', voteOptions);
+        api_1.startVote(zone, voteOptions);
+    }
 };
 const data = {
     events: [],
     actions: [],
     lastTime: 0,
     runHandle: undefined,
-    runner
+    runner,
+    activeVotes: new Map()
 };
 const votingSignalR = new signalR.HubConnectionBuilder()
     .withUrl("https://uvxol-httptrigger.azurewebsites.net/api")
     .build();
 votingSignalR.on("NewVote", ({ voter, voteOptionId, actionId }) => {
+    console.log("new vote" + voter);
     if (voter !== "control") {
         world.createEntity()
             .addComponent(ecs_1.PendingVoteOption, { voter, actionId, voteOptionId });
+    }
+});
+votingSignalR.on("NewClient", () => {
+    for (const entry of data.activeVotes.entries()) {
+        api_1.startVote(entry[0], entry[1]);
     }
 });
 votingSignalR.start().catch(err => console.error(err));
@@ -127,7 +141,7 @@ const broadcast = (msg) => {
 const renderer = world.createEntity()
     .addComponent(ecs_1.Run, { events: data.events, actions: data.actions, runner })
     .addComponent(ecs_1.Clock)
-    .addComponent(ecs_1.FunMeter);
+    .addComponent(ecs_1.Meter);
 wss.on('connection', ws => {
     const status = { connected: true };
     const ping = setInterval(() => {
@@ -163,7 +177,9 @@ wss.on('connection', ws => {
                         events: data.events,
                         actions: data.actions,
                         time: renderer.getComponent(ecs_1.Clock).time,
-                        speed: renderer.getComponent(ecs_1.Clock).timeScale
+                        speed: renderer.getComponent(ecs_1.Clock).timeScale,
+                        funMeter: renderer.getComponent(ecs_1.Meter).fun,
+                        budgetMeter: renderer.getComponent(ecs_1.Meter).budget
                     }));
                 }
                 break;
@@ -171,7 +187,6 @@ wss.on('connection', ws => {
     });
 });
 const startWorld = (events, actions, voteOptions, id) => {
-    console.log("starting " + events.length);
     if (data.runHandle) {
         clearTimeout(data.runHandle);
     }

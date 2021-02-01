@@ -15,10 +15,10 @@ class VoteOptions extends VuexModule {
   }
 
   @Action({ commit: 'addVoteOption', rawError: true })
-  public async createOrUpdateVoteOption(vo: { id: number | undefined, shortname: string, name: string, text: string, dependencies: number[], preventions: number[] }): Promise<VoteOption> {
+  public async createOrUpdateVoteOption(vo: { id: number | undefined, shortname: string, name: string, text: string, dependencies: number[], preventions: number[], funRequirement: number | undefined, budgetRequirement: number | undefined }): Promise<VoteOption> {
     return vo.id === undefined
-      ? api.postVoteOption(vo.name, vo.shortname, vo.text, vo.dependencies, vo.preventions)
-      : api.putVoteOption(vo.id, vo.name, vo.shortname, vo.text, vo.dependencies, vo.preventions)
+      ? api.postVoteOption(vo.name, vo.shortname, vo.text, vo.funRequirement, vo.budgetRequirement, vo.dependencies, vo.preventions)
+      : api.putVoteOption(vo.id, vo.name, vo.shortname, vo.text, vo.funRequirement, vo.budgetRequirement, vo.dependencies, vo.preventions)
   }
 
   @Action({ commit: 'removeVoteOption', rawError: true })
