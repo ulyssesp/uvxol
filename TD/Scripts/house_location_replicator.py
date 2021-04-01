@@ -14,7 +14,7 @@ def onRemoveReplicant(comp, replicant):
 def onReplicate(comp, allOps, newOps, template, master):
 
   for i, c in enumerate(newOps):
-    c.name = template[i, 0] + "_CONTENT_composite"
+    #c.name = template[i, 0] + "_CONTENT_composite"
     c.outputConnectors[0].connect(op('house_autoswitch'))
     pass
 

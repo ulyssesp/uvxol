@@ -4,6 +4,7 @@ import * as ty from '@/types';
 import store from '@/store';
 import eventStore from './events';
 import Socket from './socket';
+import e from 'express';
 
 
 const socket = new Socket();
@@ -30,6 +31,7 @@ class Run extends VuexModule {
 
   public chosenVoteOptions: number[] = [];
   public events: ty.EventRenderData[] = [];
+  public eventsById: {[id: number]: ty.EventRenderData} = {};
   public actionList: ty.ActionRenderData<ty.ActionType>[] = [];
 
   @Action({ commit: 'restart', rawError: true })
@@ -72,8 +74,12 @@ class Run extends VuexModule {
       socket.addListener(msg => {
         switch (msg.type) {
           case "replaceState":
-            this.actionList = msg.actions;
+            this.actionList = msg.actions.filter(a => !ty.isServerMeterAction(a));
+            this.funMeter = 0;
+            (msg.actions.filter(a => ty.isServerMeterAction(a)) as ty.ServerType<ty.EditableAction<"meter">>[])
+              .forEach(a => this.funMeter += a.meterType === "fun" ? a.value : 0);
             this.events = msg.events;
+            this.events.forEach(e => this.eventsById[e.id] = e);
             this.syncTime = performance.now();
             this.startTime = msg.time;
             this.time = this.startTime;
@@ -86,13 +92,30 @@ class Run extends VuexModule {
             this.speed = msg.speed;
             break;
           case "addAction":
-            this.actionList.push(msg.data);
+            if(ty.isServerMeterAction(msg.data) && msg.data.meterType === "fun") {
+              this.funMeter += msg.data.value;
+            } else {
+              this.actionList.push(msg.data);
+            }
             break;
           case "addEvent":
-            this.events.push(msg.data);
+            const curEvent = this.eventsById[msg.data.id];
+            if(curEvent) {
+              Object.assign(curEvent, msg.data);
+            } else {
+              this.eventsById[msg.data.id] = msg.data;
+            }
+
+            if(this.eventsById[msg.data.id].state === "finished") {
+              this.events = this.events.filter(e => e.id !== msg.data.id);
+            } else if(!this.events.find(e => e.id === msg.data.id)){
+              this.events.push(this.eventsById[msg.data.id]);
+            }
+
             break;
           case "removeEvent":
             this.events = this.events.filter(e => e.id !== msg.id);
+            delete this.eventsById[msg.id];
             break;
           case "removeAction":
             this.actionList = this.actionList.filter(a => a.id !== msg.id);

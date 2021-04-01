@@ -11,6 +11,6 @@ import { Component, Prop, Vue } from "vue-property-decorator";
 
 @Component
 export default class TimeView extends Vue {
-  @Prop({ required: true }) time: number = 0;
+  @Prop({ required: true }) time: number | undefined;
 }
 </script>

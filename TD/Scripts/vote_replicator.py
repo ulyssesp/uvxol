@@ -17,7 +17,7 @@ def onReplicate(comp, allOps, newOps, template, master):
     c.par.Index = i
     if c in newOps:
       target_location = template[i, 1] + "_" + template[i, 2]
-      target = op(target_location + "_composite")
+      target = op("composite_" + target_location)
       c.outputConnectors[0].connect(target)
 
   return

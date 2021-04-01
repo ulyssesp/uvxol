@@ -10,10 +10,11 @@
             <span>{{ event.name }}</span>
           </v-tooltip>
         </v-list-item-title>
+        Triggered by: {{ triggerName }}
         <v-list-item-subtitle>
           State: {{ event.state }}, Start:
-          <TimeView v-bind:time="event.start" />, End:
-          <TimeView v-bind:time="event.end" />
+          <TimeView :time="event.start" />, End:
+          <TimeView :time="event.end" />
         </v-list-item-subtitle>
       </v-list-item-content>
     </v-list-item>
@@ -33,6 +34,12 @@ export default class Event extends Vue {
   @Prop({ required: true }) event!: EventRenderData;
   async chooseOption(id: number, actionId: number) {
     runStore.chooseVote(["control", id, actionId]);
+  }
+  get triggerName() {
+    return this.event.triggerId === undefined ? "undefined" 
+      : this.event.triggerId === -1 ? "start" 
+      : runStore.eventsById[this.event.triggerId] === undefined ? "unfound"
+      : runStore.eventsById[this.event.triggerId].name;
   }
 }
 </script>

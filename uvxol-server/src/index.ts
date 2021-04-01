@@ -27,7 +27,6 @@ import { getActions, getEvents, getVoteOptions, startVote, voteOptionsUri } from
 
 const process = require('process');
 
-
 const world = new World();
 world
   .registerComponent(TimeToggle)
@@ -136,7 +135,6 @@ const votingSignalR = new signalR.HubConnectionBuilder()
   .build();
 
 votingSignalR.on("NewVote", ({ voter, voteOptionId, actionId }: { voter: string, voteOptionId: number, actionId: number }) => {
-  console.log("new vote" + voter)
   if (voter !== "control") {
     world!.createEntity()
       .addComponent(PendingVoteOption, { voter, actionId, voteOptionId });
@@ -163,6 +161,7 @@ const renderer: Entity = world.createEntity()
   .addComponent(Meter);
 
 wss.on('connection', ws => {
+  console.log("connected " + ws)
   const status = { connected: true };
   const ping = setInterval(() => {
     if (!status.connected) {

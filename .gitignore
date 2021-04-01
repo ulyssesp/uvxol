@@ -1,9 +1,7 @@
 .devcontainer/
 **/node_modules
-**/dist/**
+**/dist
 
-video/**
+**/video
+video.zip
 runner-wasm/
-
-*.zip
-*.exe

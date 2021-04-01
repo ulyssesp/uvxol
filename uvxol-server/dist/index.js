@@ -122,7 +122,6 @@ const votingSignalR = new signalR.HubConnectionBuilder()
     .withUrl("https://uvxol-httptrigger.azurewebsites.net/api")
     .build();
 votingSignalR.on("NewVote", ({ voter, voteOptionId, actionId }) => {
-    console.log("new vote" + voter);
     if (voter !== "control") {
         world.createEntity()
             .addComponent(ecs_1.PendingVoteOption, { voter, actionId, voteOptionId });
@@ -143,6 +142,7 @@ const renderer = world.createEntity()
     .addComponent(ecs_1.Clock)
     .addComponent(ecs_1.Meter);
 wss.on('connection', ws => {
+    console.log("connected " + ws);
     const status = { connected: true };
     const ping = setInterval(() => {
         if (!status.connected) {

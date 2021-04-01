@@ -44,7 +44,8 @@ export type EventRenderData = {
     name: string,
     end: number,
     start: number,
-    state: "pending" | "active" | "finished"
+    state: "pending" | "active" | "finished",
+    triggerId: number,
 }
 
 export function isServerAction<T extends ActionType>(a: ServerType<EditableAction<T>> | ServerType<Action<T>>): a is ServerType<Action<T>> {

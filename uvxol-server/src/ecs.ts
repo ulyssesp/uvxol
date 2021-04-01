@@ -1,5 +1,5 @@
 import { Component, Types, ArrayPropType, System, Entity, TagComponent, Not } from 'ecsy';
-import { Action, ActionEvent, ActionType, ViewAction, VoteOptionId, VoteActionFields, FileActionFields, EventRenderData, VoteOption, ActionRenderData, actionVoteOptions, Runner } from './types';
+import { Action, ActionEvent, ActionType, ViewAction, VoteOptionId, VoteActionFields, FileActionFields, EventRenderData, VoteOption, ActionRenderData, actionVoteOptions, Runner, isMeterAction } from './types';
 
 export class Store<A> extends Component<{ data: Map<number, A> }> {
   data = new Map<number, A>();
@@ -72,8 +72,10 @@ export class DependenciesSatisfied extends TagComponent { };
 
 export class EventTrigger extends Component<{ eventId: number }> {
   eventId: number = -1;
+  triggerId: number = -1;
   static schema = {
     eventId: { type: Types.Number },
+    triggerId: { type: Types.Number },
   }
 }
 
@@ -82,11 +84,14 @@ export class RenderableEvent extends Component<EventRenderData> {
   name: string = "";
   start: number = 0;
   end: number = 0;
+  eventId: number = -1;
+  triggerId: number = -1;
   static schema = {
     id: { type: Types.Number },
     name: { type: Types.String },
     start: { type: Types.Number },
     end: { type: Types.Number },
+    triggerId: {type: Types.Number},
   }
 }
 
@@ -132,15 +137,15 @@ export class RenderableFileAction extends Component<ActionRenderData<"video">> {
   }
 }
 
-export class RenderableMeterAction extends Component<ActionRenderData<"funMeter">> {
+export class RenderableMeterAction extends Component<ActionRenderData<"meter">> {
   id: number = -1;
   eventId: number = -1;
   name: string = "";
   zone: string = "";
   location: string = "";
-  type: "funMeter" = "funMeter";
-  funMeterValue: number = 0;
-  budgetMeterValue: number = 0;
+  type: "meter" = "meter";
+  meterType: "fun" | "budget" = "fun";
+  value: number = 0;
 
   static schema = {
     id: { type: Types.Number },
@@ -149,8 +154,8 @@ export class RenderableMeterAction extends Component<ActionRenderData<"funMeter"
     location: { type: Types.String },
     type: { type: Types.String },
     eventId: { type: Types.Number },
-    funMeterValue: { type: Types.Number },
-    budgetMeterValue: { type: Types.Number },
+    meterType: { type: Types.String },
+    value: { type: Types.Number },
   }
 }
 
@@ -245,7 +250,8 @@ export class Reset extends System {
             dependencies: event.dependencies.map(vo => vo.id)
           })
           .addComponent(EventTrigger, {
-            eventId: e
+            eventId: e,
+            triggerId: -1
           })
           .addComponent(TimeToggle, {
             on: 0,
@@ -322,6 +328,10 @@ export class TallyVotes extends System {
     }
   }
   execute(delta: number, time: number): void {
+    if(!this.queries.finishedVotes.added) {
+      return;
+    }
+
     this.queries.finishedVotes.added!.forEach(entity => {
       const voteAction = entity.getComponent<VoteAction>(VoteAction)!;
       const finalVotes: Map<number, number> = new Map();
@@ -343,9 +353,11 @@ export class TallyVotes extends System {
 
       const max = Math.max(...finalVotes.values());
       const winners = [...finalVotes].filter(([id, count]: [number, number]) => count === max);
-      const winner = winners[Math.floor(Math.random() * winners.length)][0];
+      if(winners.length > 0) {
+        const winner = winners[Math.floor(Math.random() * winners.length)][0];
+        entity.addComponent(ChosenVoteOption, { id: winner });
+      }
       entity.removeComponent(VoteAction);
-      entity.addComponent(ChosenVoteOption, { id: winner });
     })
   }
 }
@@ -417,7 +429,8 @@ export class EventTriggerSystem extends System {
           id: eventData.id,
           name: eventData.name,
           start: on,
-          end: off
+          end: off,
+          triggerId: eventTrigger.triggerId,
         })
         .addComponent(TimeToggle, { on, off });
 
@@ -476,16 +489,20 @@ export class EventTriggerSystem extends System {
                 },
               ))
             .addComponent(TimeToggle, { on: on, off: off })
-        } else if (actionData.type === "funMeter") {
+        } else if (isMeterAction(actionData)) {
+          const meterType = (actionData as Action<"meter">).funMeterValue !== undefined ? "fun" 
+            : (actionData as Action<"meter">).budgetMeterValue !== undefined ? "budget"
+            : undefined;
+
           entity
             .addComponent(
               RenderableMeterAction,
               Object.assign(baseRenderableAction,
                 {
                   eventId: eventData.id,
-                  type: "funMeter" as "funMeter",
-                  funMeterValue: (actionData as Action<"funMeter">).funMeterValue,
-                  budgetMeterValue: (actionData as Action<"funMeter">)
+                  type: "meter" as "meter",
+                  value: meterType === "fun" ? (actionData as Action<"meter">).funMeterValue : (actionData as Action<"meter">).budgetMeterValue,
+                  meterType
                 },
               ))
             .addComponent(TimeToggle, { on: on, off: Number.MAX_VALUE })
@@ -495,7 +512,7 @@ export class EventTriggerSystem extends System {
       eventData.triggers.forEach(t => {
         const triggerData = eventStore.get(t)!;
         this.world.createEntity()
-          .addComponent(EventTrigger, { eventId: t })
+          .addComponent(EventTrigger, { eventId: t, triggerId: eventData.id })
           .addComponent(DependenciesTrigger, { dependencies: triggerData.dependencies.map(vo => vo.id) })
           .addComponent(TimeToggle, { on: off, off: off + 1000 })
       })
@@ -534,28 +551,34 @@ export class EventRendererSystem extends System {
   }
   execute(delta: number, time: number): void {
     const eventStore = this.queries.eventStore.results[0].getComponent<ActionEventStore>(ActionEventStore)!.data;
+    const renderer = this.queries.renderer.results[0].getComponent<Run>(Run)!;
 
     const events = this.queries.renderer.results[0].getMutableComponent<Run>(Run)!.events;
-    this.queries.pendingEvents.results!.forEach(entity => {
+    this.queries.pendingEvents.added!.forEach(entity => {
       const renderableEvent: RenderableEvent = entity.getComponent<RenderableEvent>(RenderableEvent)!;
-      createOrUpdateEventState(events, "pending", renderableEvent);
+      const event = createOrUpdateEventState(events, "pending", renderableEvent);
+      renderer.runner.addEvent(event);
     });
 
-
-    this.queries.activeEvents.results!.forEach(entity => {
-      const renderableEvent: RenderableEvent = entity.getComponent<RenderableEvent>(RenderableEvent)!;
-      createOrUpdateEventState(events, "active", renderableEvent);
-    });
 
     this.queries.activeEvents.added!.forEach(entity => {
-      const timeToggle = entity.getComponent(TimeToggle)!;
-      const renderableEvent = entity.getComponent<RenderableEvent>(RenderableEvent)!;
-      const eventData = eventStore.get(renderableEvent.id)!;
-    })
-
-    this.queries.finishedEvents.results!.forEach(entity => {
       const renderableEvent: RenderableEvent = entity.getComponent<RenderableEvent>(RenderableEvent)!;
-      createOrUpdateEventState(events, "finished", renderableEvent);
+      const event = createOrUpdateEventState(events, "active", renderableEvent);
+      renderer.runner.addEvent(event);
+    });
+
+    // this.queries.activeEvents.added!.forEach(entity => {
+    //   const timeToggle = entity.getComponent(TimeToggle)!;
+    //   const renderableEvent = entity.getComponent<RenderableEvent>(RenderableEvent)!;
+    //   if(renderableEvent) {
+    //     const eventData = eventStore.get(renderableEvent.id)!;
+    //   }
+    // })
+
+    this.queries.finishedEvents.added!.forEach(entity => {
+      const renderableEvent: RenderableEvent = entity.getComponent<RenderableEvent>(RenderableEvent)!;
+      const event = createOrUpdateEventState(events, "finished", renderableEvent);
+      renderer.runner.addEvent(event);
     });
   }
 }
@@ -639,8 +662,11 @@ export class ActionRendererSystem extends System {
     this.queries.meterActions.added!.forEach(entity => {
       console.log("Adding meter")
       const renderableAction: RenderableMeterAction = entity.getComponent<RenderableMeterAction>(RenderableMeterAction)!;
-      meter.fun += renderableAction.funMeterValue;
-      meter.budget += renderableAction.budgetMeterValue;
+      if(renderableAction.meterType === "fun") {
+        meter.fun += renderableAction.value;
+      } else if(renderableAction.meterType === "budget") {
+        meter.budget += renderableAction.value;
+      }
       const actionData = {
         id: renderableAction.id,
         eventId: renderableAction.eventId,
@@ -648,8 +674,8 @@ export class ActionRendererSystem extends System {
         zone: renderableAction.zone,
         location: renderableAction.location,
         type: renderableAction.type,
-        funMeterValue: meter.fun,
-        budgetMeterValue: meter.budget
+        meterType: renderableAction.meterType,
+        value: renderableAction.value
       };
       if (renderer.runner) {
         renderer.runner.addAction(actionData);
@@ -683,8 +709,11 @@ export class ActionRendererSystem extends System {
         entity.hasRemovedComponent(RenderableMeterAction)
           ? entity.getRemovedComponent<RenderableMeterAction>(RenderableMeterAction)!
           : entity.getComponent<RenderableMeterAction>(RenderableMeterAction)!;
-      meter.fun -= renderableAction.funMeterValue;
-      meter.budget -= renderableAction.budgetMeterValue;
+      if(renderableAction.meterType === "fun") {
+        meter.fun -= renderableAction.value;
+      } else if (renderableAction.meterType === "budget") {
+        meter.budget -= renderableAction.value;
+      }
     });
   }
 }
@@ -693,16 +722,20 @@ const createOrUpdateEventState = (
   events: EventRenderData[], state: "pending" | "active" | "finished",
   renderableEvent: RenderableEvent
 ) => {
-  const event = events.find(e => e.id === renderableEvent.id);
+  let event = events.find(e => e.id === renderableEvent.id);
   if (event) {
     event.state = state;
   } else {
-    events.push({
+    event = {
       id: renderableEvent.id,
       name: renderableEvent.name,
       start: renderableEvent.start,
       end: renderableEvent.end,
-      state: state
-    });
+      state: state,
+      triggerId: renderableEvent.triggerId
+    };
+    events.push(event);
   }
+
+  return event;
 }

@@ -10,33 +10,40 @@ exports.eventsuri = 'https://uvxol-httptrigger.azurewebsites.net/api/events';
 exports.actionsuri = 'https://uvxol-httptrigger.azurewebsites.net/api/actions';
 exports.voteOptionsUri = 'https://uvxol-httptrigger.azurewebsites.net/api/voteoptions';
 exports.startVoteUri = "https://uvxol-httptrigger.azurewebsites.net/api/twitchVoteOptions";
-exports.mapEvent = (e) => Object.assign(e, {
+const mapEvent = (e) => Object.assign(e, {
     actions: (e.actions || []).map(exports.mapAction),
     triggers: (e.triggers || []).map((t) => t.id),
     dependencies: (e.dependencies || []).map(exports.mapVoteOption),
     preventions: (e.preventions || []).map(exports.mapVoteOption),
 });
-exports.mapAction = (a) => Object.assign(a, {
+exports.mapEvent = mapEvent;
+const mapAction = (a) => Object.assign(a, {
     type: types_1.TypesActionMap[a.type],
     voteOptions: (a.voteOptions || []).map(exports.mapVoteOption),
 });
-exports.mapVoteOption = (a) => Object.assign(a, {
+exports.mapAction = mapAction;
+const mapVoteOption = (a) => Object.assign(a, {
     dependencies: (a.dependencies || []).map((d) => d.id),
     preventions: (a.preventions || []).map((d) => d.id),
 });
-exports.getEvents = () => node_fetch_1.default(exports.eventsuri)
+exports.mapVoteOption = mapVoteOption;
+const getEvents = () => node_fetch_1.default(exports.eventsuri)
     .then((res) => res.json())
     .then((as) => as[0] || [])
     .then((as) => as.map(exports.mapEvent));
-exports.getActions = () => node_fetch_1.default(exports.actionsuri)
+exports.getEvents = getEvents;
+const getActions = () => node_fetch_1.default(exports.actionsuri)
     .then(res => res.json())
     .then((as) => as[0])
     .then(as => as.map(exports.mapAction));
-exports.getVoteOptions = () => node_fetch_1.default(exports.voteOptionsUri)
+exports.getActions = getActions;
+const getVoteOptions = () => node_fetch_1.default(exports.voteOptionsUri)
     .then(res => res.json())
     .then((as) => as[0])
     .then(vos => vos.map(exports.mapVoteOption));
-exports.startVote = (zone, voteOptions) => node_fetch_1.default(exports.startVoteUri, {
+exports.getVoteOptions = getVoteOptions;
+const startVote = (zone, voteOptions) => node_fetch_1.default(exports.startVoteUri, {
     method: "post",
     body: JSON.stringify({ zone, voteOptions })
 });
+exports.startVote = startVote;

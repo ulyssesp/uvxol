@@ -102,11 +102,13 @@ class EventTrigger extends ecsy_1.Component {
     constructor() {
         super(...arguments);
         this.eventId = -1;
+        this.triggerId = -1;
     }
 }
 exports.EventTrigger = EventTrigger;
 EventTrigger.schema = {
     eventId: { type: ecsy_1.Types.Number },
+    triggerId: { type: ecsy_1.Types.Number },
 };
 class RenderableEvent extends ecsy_1.Component {
     constructor() {
@@ -115,6 +117,8 @@ class RenderableEvent extends ecsy_1.Component {
         this.name = "";
         this.start = 0;
         this.end = 0;
+        this.eventId = -1;
+        this.triggerId = -1;
     }
 }
 exports.RenderableEvent = RenderableEvent;
@@ -123,6 +127,7 @@ RenderableEvent.schema = {
     name: { type: ecsy_1.Types.String },
     start: { type: ecsy_1.Types.Number },
     end: { type: ecsy_1.Types.Number },
+    triggerId: { type: ecsy_1.Types.Number },
 };
 class RenderableVoteAction extends ecsy_1.Component {
     constructor() {
@@ -178,9 +183,9 @@ class RenderableMeterAction extends ecsy_1.Component {
         this.name = "";
         this.zone = "";
         this.location = "";
-        this.type = "funMeter";
-        this.funMeterValue = 0;
-        this.budgetMeterValue = 0;
+        this.type = "meter";
+        this.meterType = "fun";
+        this.value = 0;
     }
 }
 exports.RenderableMeterAction = RenderableMeterAction;
@@ -191,8 +196,8 @@ RenderableMeterAction.schema = {
     location: { type: ecsy_1.Types.String },
     type: { type: ecsy_1.Types.String },
     eventId: { type: ecsy_1.Types.Number },
-    funMeterValue: { type: ecsy_1.Types.Number },
-    budgetMeterValue: { type: ecsy_1.Types.Number },
+    meterType: { type: ecsy_1.Types.String },
+    value: { type: ecsy_1.Types.Number },
 };
 function isRenderableVoteAction(a) {
     return a.type === "vote";
@@ -274,7 +279,8 @@ class Reset extends ecsy_1.System {
                     dependencies: event.dependencies.map(vo => vo.id)
                 })
                     .addComponent(EventTrigger, {
-                    eventId: e
+                    eventId: e,
+                    triggerId: -1
                 })
                     .addComponent(TimeToggle, {
                     on: 0,
@@ -358,6 +364,9 @@ TimeToggleSystem.queries = {
 };
 class TallyVotes extends ecsy_1.System {
     execute(delta, time) {
+        if (!this.queries.finishedVotes.added) {
+            return;
+        }
         this.queries.finishedVotes.added.forEach(entity => {
             const voteAction = entity.getComponent(VoteAction);
             const finalVotes = new Map();
@@ -375,9 +384,11 @@ class TallyVotes extends ecsy_1.System {
             });
             const max = Math.max(...finalVotes.values());
             const winners = [...finalVotes].filter(([id, count]) => count === max);
-            const winner = winners[Math.floor(Math.random() * winners.length)][0];
+            if (winners.length > 0) {
+                const winner = winners[Math.floor(Math.random() * winners.length)][0];
+                entity.addComponent(ChosenVoteOption, { id: winner });
+            }
             entity.removeComponent(VoteAction);
-            entity.addComponent(ChosenVoteOption, { id: winner });
         });
     }
 }
@@ -432,7 +443,8 @@ class EventTriggerSystem extends ecsy_1.System {
                 id: eventData.id,
                 name: eventData.name,
                 start: on,
-                end: off
+                end: off,
+                triggerId: eventTrigger.triggerId,
             })
                 .addComponent(TimeToggle, { on, off });
             eventData.actions.forEach(a => {
@@ -482,13 +494,16 @@ class EventTriggerSystem extends ecsy_1.System {
                     }))
                         .addComponent(TimeToggle, { on: on, off: off });
                 }
-                else if (actionData.type === "funMeter") {
+                else if (types_1.isMeterAction(actionData)) {
+                    const meterType = actionData.funMeterValue !== undefined ? "fun"
+                        : actionData.budgetMeterValue !== undefined ? "budget"
+                            : undefined;
                     entity
                         .addComponent(RenderableMeterAction, Object.assign(baseRenderableAction, {
                         eventId: eventData.id,
-                        type: "funMeter",
-                        funMeterValue: actionData.funMeterValue,
-                        budgetMeterValue: actionData
+                        type: "meter",
+                        value: meterType === "fun" ? actionData.funMeterValue : actionData.budgetMeterValue,
+                        meterType
                     }))
                         .addComponent(TimeToggle, { on: on, off: Number.MAX_VALUE });
                 }
@@ -496,7 +511,7 @@ class EventTriggerSystem extends ecsy_1.System {
             eventData.triggers.forEach(t => {
                 const triggerData = eventStore.get(t);
                 this.world.createEntity()
-                    .addComponent(EventTrigger, { eventId: t })
+                    .addComponent(EventTrigger, { eventId: t, triggerId: eventData.id })
                     .addComponent(DependenciesTrigger, { dependencies: triggerData.dependencies.map(vo => vo.id) })
                     .addComponent(TimeToggle, { on: off, off: off + 1000 });
             });
@@ -529,23 +544,29 @@ EventTriggerSystem.queries = {
 class EventRendererSystem extends ecsy_1.System {
     execute(delta, time) {
         const eventStore = this.queries.eventStore.results[0].getComponent(ActionEventStore).data;
+        const renderer = this.queries.renderer.results[0].getComponent(Run);
         const events = this.queries.renderer.results[0].getMutableComponent(Run).events;
-        this.queries.pendingEvents.results.forEach(entity => {
+        this.queries.pendingEvents.added.forEach(entity => {
             const renderableEvent = entity.getComponent(RenderableEvent);
-            createOrUpdateEventState(events, "pending", renderableEvent);
-        });
-        this.queries.activeEvents.results.forEach(entity => {
-            const renderableEvent = entity.getComponent(RenderableEvent);
-            createOrUpdateEventState(events, "active", renderableEvent);
+            const event = createOrUpdateEventState(events, "pending", renderableEvent);
+            renderer.runner.addEvent(event);
         });
         this.queries.activeEvents.added.forEach(entity => {
-            const timeToggle = entity.getComponent(TimeToggle);
             const renderableEvent = entity.getComponent(RenderableEvent);
-            const eventData = eventStore.get(renderableEvent.id);
+            const event = createOrUpdateEventState(events, "active", renderableEvent);
+            renderer.runner.addEvent(event);
         });
-        this.queries.finishedEvents.results.forEach(entity => {
+        // this.queries.activeEvents.added!.forEach(entity => {
+        //   const timeToggle = entity.getComponent(TimeToggle)!;
+        //   const renderableEvent = entity.getComponent<RenderableEvent>(RenderableEvent)!;
+        //   if(renderableEvent) {
+        //     const eventData = eventStore.get(renderableEvent.id)!;
+        //   }
+        // })
+        this.queries.finishedEvents.added.forEach(entity => {
             const renderableEvent = entity.getComponent(RenderableEvent);
-            createOrUpdateEventState(events, "finished", renderableEvent);
+            const event = createOrUpdateEventState(events, "finished", renderableEvent);
+            renderer.runner.addEvent(event);
         });
     }
 }
@@ -620,8 +641,12 @@ class ActionRendererSystem extends ecsy_1.System {
         this.queries.meterActions.added.forEach(entity => {
             console.log("Adding meter");
             const renderableAction = entity.getComponent(RenderableMeterAction);
-            meter.fun += renderableAction.funMeterValue;
-            meter.budget += renderableAction.budgetMeterValue;
+            if (renderableAction.meterType === "fun") {
+                meter.fun += renderableAction.value;
+            }
+            else if (renderableAction.meterType === "budget") {
+                meter.budget += renderableAction.value;
+            }
             const actionData = {
                 id: renderableAction.id,
                 eventId: renderableAction.eventId,
@@ -629,8 +654,8 @@ class ActionRendererSystem extends ecsy_1.System {
                 zone: renderableAction.zone,
                 location: renderableAction.location,
                 type: renderableAction.type,
-                funMeterValue: meter.fun,
-                budgetMeterValue: meter.budget
+                meterType: renderableAction.meterType,
+                value: renderableAction.value
             };
             if (renderer.runner) {
                 renderer.runner.addAction(actionData);
@@ -658,8 +683,12 @@ class ActionRendererSystem extends ecsy_1.System {
             const renderableAction = entity.hasRemovedComponent(RenderableMeterAction)
                 ? entity.getRemovedComponent(RenderableMeterAction)
                 : entity.getComponent(RenderableMeterAction);
-            meter.fun -= renderableAction.funMeterValue;
-            meter.budget -= renderableAction.budgetMeterValue;
+            if (renderableAction.meterType === "fun") {
+                meter.fun -= renderableAction.value;
+            }
+            else if (renderableAction.meterType === "budget") {
+                meter.budget -= renderableAction.value;
+            }
         });
     }
 }
@@ -694,17 +723,20 @@ ActionRendererSystem.queries = {
     }
 };
 const createOrUpdateEventState = (events, state, renderableEvent) => {
-    const event = events.find(e => e.id === renderableEvent.id);
+    let event = events.find(e => e.id === renderableEvent.id);
     if (event) {
         event.state = state;
     }
     else {
-        events.push({
+        event = {
             id: renderableEvent.id,
             name: renderableEvent.name,
             start: renderableEvent.start,
             end: renderableEvent.end,
-            state: state
-        });
+            state: state,
+            triggerId: renderableEvent.triggerId
+        };
+        events.push(event);
     }
+    return event;
 };

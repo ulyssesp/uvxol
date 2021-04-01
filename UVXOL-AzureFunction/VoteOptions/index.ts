@@ -18,37 +18,21 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         } else {
             body = await db.getVoteOptions()
                 .then(res => res.recordset)
-                .catch(err => { context.log(err); return { err } });
+                .catch(err => { context.log(err); return { err }});
         }
     } else if (req.method === "POST") {
         body = await db.insertVoteOption(
-            req.body.name,
-            req.body.shortname,
-            req.body.text,
-            req.body.funRequirement,
-            req.body.budgetRequirement,
-            req.body.dependencies,
-            req.body.preventions,
-        )
-            .then(res => res.recordset[0][0])
-            .catch(err => { context.log(err); return { err } });
-    } else if (req.method === "PUT") {
-        body = await db.updateVoteOption(
-            req.body.id,
-            req.body.name,
-            req.body.shortname,
-            req.body.text,
-            req.body.funRequirement,
-            req.body.budgetRequirement,
+            req.body.name, 
+            req.body.text, 
             req.body.dependencies,
             req.body.preventions
         )
-            .then(res => res.recordset[0][0])
-            .catch(err => { context.log(err); return { err } });
+        .then(res => res.recordset[0][0])
+        .catch(err => { context.log(err); return { err }});
     } else if (req.method === "DELETE") {
         body = await db.deleteVoteOption(id)
             .then(() => ({ message: "success" }))
-            .catch(err => ({ err }))
+            .catch(err => ({err}))
     }
 
     context.res = {

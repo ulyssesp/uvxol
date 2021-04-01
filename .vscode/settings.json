@@ -1,12 +1,7 @@
 {
     "azureFunctions.deploySubpath": "UVXOL-AzureFunction",
     "azureFunctions.projectLanguage": "TypeScript",
-    "azureFunctions.projectRuntime": "~3",
+    "azureFunctions.projectRuntime": "~2",
     "debug.internalConsoleOptions": "neverOpen",
-    "azureFunctions.preDeployTask": "npm prune",
-    "files.exclude": {
-        "obj": true,
-        "bin": true
-    },
-    "azureFunctions.postDeployTask": "npm install"
+    "azureFunctions.preDeployTask": "npm prune"
 }

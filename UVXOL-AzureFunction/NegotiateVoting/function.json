@@ -17,12 +17,6 @@
       "name": "connectionInfo",
       "hubName": "voting",
       "direction": "in"
-    },
-    {
-      "type": "signalR",
-      "name": "signalRMessages",
-      "hubName": "voting",
-      "direction": "out"
     }
   ],
   "scriptFile": "../dist/NegotiateVoting/index.js"

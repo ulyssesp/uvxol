@@ -230,10 +230,11 @@ export default class EventsList extends Vue {
     this.editingEvent = mapEvent(eventStore.events[id]);
     this.dialog = true;
   }
+
   duplicateEvent(id: number) {
     eventStore
       .createOrUpdateEvent(
-        Object.assign({}, eventStore.events[id], { id: undefined })
+        Object.assign({}, eventStore.events[id], { id: undefined, actions: eventStore.events[id].actions.map(a => a.id) })
       )
       .then(() => (this.err = "success"))
       .then(() => this.$emit("data-change"))
