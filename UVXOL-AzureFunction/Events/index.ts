@@ -11,43 +11,47 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     if (req.method === "GET") {
         if (triggerId != null) {
-            body = 
+            body =
                 await (triggerId == -1 ? db.getStartEvents() : db.getEventsForTrigger(triggerId))
                     .then(res => res.recordset)
-                    .catch(err => { context.log(err); return { err }});
+                    .catch(err => { context.log(err); return { err } });
+        } else if (id != null) {
+            body = await db.getEvent(id).then(res => res.recordset[0])
+                .catch(err => { context.log(err); return { err } });
+
         } else {
             body = await db.getEvents().then(res => res.recordset)
-                .catch(err => { context.log(err); return { err }});
+                .catch(err => { context.log(err); return { err } });
         }
     } else if (req.method === "POST") {
         body = await db.insertEvent(
-            req.body.triggers || [], 
-            req.body.duration, 
+            req.body.triggers || [],
+            req.body.duration,
             req.body.name,
-            req.body.actions || [], 
+            req.body.actions || [],
             req.body.dependencies || [],
             req.body.preventions || [],
             req.body.delay
         )
-        .then(res => res.recordset[0][0])
-        .catch(err => { context.log(err); return { err }});
+            .then(res => res.recordset[0][0])
+            .catch(err => { context.log(err); return { err } });
     } else if (req.method === "PUT") {
         body = await db.updateEvent(
             req.body.id,
-            req.body.triggers || [], 
-            req.body.duration, 
+            req.body.triggers || [],
+            req.body.duration,
             req.body.name,
-            req.body.actions || [], 
+            req.body.actions || [],
             req.body.dependencies || [],
             req.body.preventions || [],
             req.body.delay
         )
-        .then(res => res.recordset[0][0])
-        .catch(err => { context.log(err); return { err }});
+            .then(res => res.recordset[0][0])
+            .catch(err => { context.log(err); return { err } });
     } else if (req.method === "DELETE") {
         body = await db.deleteEvent(id)
             .then(() => ({ message: "success" }))
-            .catch(err => ({err}))
+            .catch(err => ({ err }))
     }
 
     context.res = {
