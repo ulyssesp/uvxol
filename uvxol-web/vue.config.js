@@ -8,5 +8,10 @@ module.exports = {
     hot: false,
     liveReload: false
   },
-  lintOnSave: false
+
+  lintOnSave: false,
+
+  transpileDependencies: [
+    'vuetify'
+  ]
 }
